@@ -7,6 +7,7 @@
 #include <stdio.h>
 
 #define  ALPHA_COUNT  26
+char *wtf();
 
 int parse_facts_or_query(char* line, char* symbol_str_list) {
 	int i = 0;
@@ -88,16 +89,14 @@ int find_matching_rp(char *line) {
 	return -1;
 }
 
-void parse_line(char *line) {
-	Symbol **all_inner_symbols = (Symbol **)malloc(sizeof(Symbol*) * 32); // shh.. dont tell bocal i hard allocate here
+Symbol** parse_line(char *line) {
+	Symbol** all_inner_symbols[8]; // shh.. dont tell bocal i hard allocate here
+	Symbol** res = (Symbol**)calloc(16, sizeof(Symbol*)); // shh.. dont tell bocal i hard allocate here also
+
+	int inner_symbols_idx = 0;
 
 	// do we find any '(' in the current line?
 	int i = strcspn(line, "(");
-	if (i == strlen(line)) {
-		// if we dont, means we wont have any inner symbols. free the inner symbols list
-		free(all_inner_symbols);
-		all_inner_symbols = NULL;
-	}
 
 	// we have '(', so we need to process the things inside of the '(' first
 	while (i < strlen(line)) {
@@ -106,7 +105,7 @@ void parse_line(char *line) {
 
 		// extract the subscring and recurse to get the symbols inside the parenthesis
 		char *inner = strndup(line + i + 1, matching_rp);
-		parse_line(inner);
+		all_inner_symbols[inner_symbols_idx++] = parse_line(inner);
 		free(inner);
 
 		i += matching_rp + 2; // offset + 0 index
@@ -121,14 +120,22 @@ void parse_line(char *line) {
 	char *linedup = strdup(line);
 	char *curr_token = strtok(linedup, " ");
 	int pstack = 0;
+	int res_idx = 0;
+	inner_symbols_idx = 0;
+	
+	// re-iterate through all tokens now, not just the '('s
 	while (curr_token)
 	{
+		// if we found a '(', replace the entire section with an 
+		// inner symbol with symbol lists
 		if (strcspn(curr_token, "(") < strlen(curr_token))
 		{
 			// first '(' found, find symbol list to replace
 			if (pstack == 0) {
 				printf("gotta blast\n");
+				// res_idx += 1;
 			}
+
 			for (size_t i = 0; i < strlen(curr_token); i++)
 			{
 				if (curr_token[i] == '(')
@@ -147,23 +154,47 @@ void parse_line(char *line) {
 			continue;
 		}
 
+		// real symbol which is not in parenthesis now, parse it normally
 		if (pstack == 0) {
 			printf("currtoken final %s\n", curr_token);
-			// 
+			// res_idx += 1;
 		}
 
 		curr_token = strtok(NULL, " ");
 	}
 	printf("==========================\n");
 	free(linedup);
+	return res;
 }
+
+// char *wtf()
+// {
+// 	char *res = strdup("OK");
+// 	if (res == NULL)
+// 		printf("hmmmm\n");
+// 	return res;
+// 	// return strdup("Ok");
+// }
 
 void test() {
 	printf("From test\n");
-	char* line = "A + (B + (C + D) + E + (F + G) + (F2 + G2 + (F2))) + H";
+	// char* line = "A + (B + (C + D) + E + (F + G) + (F2 + G2 + (F2))) + H";
 	// char* line = "A + ((B + C) + (D + E)) + (G + F)";
-	// char *line = "(A + B) + C";
-	parse_line(line);
+	char *line = "(!A + B) + C";
+	// parse_line(line);
+
+	// Symbol* s1 = generate_symbol_from("A", 0, 0);
+	// Symbol* s2 = generate_symbol_from("+", 0, 0);
+	// Symbol* s3 = generate_symbol_from("!B", 0, 0);
+
+	// free_symbol(s1);
+
+	// Symbol** symbol_list = (Symbol**)calloc(16, sizeof(Symbol*));
+	// symbol_list[0] = s1;
+	// symbol_list[1] = s2;
+	// symbol_list[2] = s3;
+
+	// free_symbol_list(symbol_list);
 	exit(0);
 }
 
