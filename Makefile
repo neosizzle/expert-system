@@ -1,5 +1,6 @@
 NAME=expertsystem
 CC = gcc -fsanitize=address -g3
+# CC = gcc
 CC_FLAGS = -Wall -Wextra
 INCS = -Iinclude
 BUILDDIR=build/
