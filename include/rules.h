@@ -45,7 +45,8 @@ typedef struct Rule
 {
 	Symbol** symbol_list;
 	Result confirmed_result;
-	Result *possible_results;
+	// Result *possible_results;
+	int ref_cnt; // used for freeing
 	ResolveType resolve_type;
 	struct Rule* implies;
 	struct Rule* iff;
@@ -53,12 +54,13 @@ typedef struct Rule
 
 typedef struct Rulegraph 
 {
-	Rule* all_rules_vertices;
+	Rule** all_rules_vertices;
 	int vertex_count;
 } Rulegraph;
 
 Symbol *generate_symbol_from(char* str, int is_inner, Symbol** inner_symbols);
 void free_symbol(Symbol *symbol);
 void free_symbol_list(Symbol **symbols);
+char *serialize_symbols(Symbol** symbols);
 
 #endif  //!__RULES__H__
