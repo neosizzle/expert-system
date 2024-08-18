@@ -8,6 +8,8 @@
 #include <string.h>
 
 #define  ALPHA_COUNT  26
+#define IMPL_RESOLVER " => "
+#define IFF_RESOLVER " <=> "
 
 int find_matching_rp(char *line) {
 	int res;
@@ -142,10 +144,10 @@ void parse_rule(char* line, Rulegraph* rule_graph) {
 	// check if rule has implication or iff
 	char *resolver = 0;
 	char *resolver_pos = 0;
-	if (resolver_pos = strstr(rule, " => "))
-		resolver = " => ";
-	else if (resolver_pos = strstr(rule, " <=> "))
-		resolver = " <=> ";
+	if (resolver_pos = strstr(rule, IMPL_RESOLVER))
+		resolver = IMPL_RESOLVER;
+	else if (resolver_pos = strstr(rule, IFF_RESOLVER))
+		resolver = IFF_RESOLVER;
 	else
 	{
 		EPRINTF("No resolve found at rule %s\n", rule);
@@ -160,14 +162,68 @@ void parse_rule(char* line, Rulegraph* rule_graph) {
 	
 	// get the expressions for both sides
 	// TODO for rhs, we search previous rules for the same symbols
-	// Symbol **lhs_symbols = parse_expression(lhs);
-	// Symbol **rhs_symbols = parse_expression(rhs);
+	Symbol **lhs_symbols = parse_expression(lhs);
+	Symbol **rhs_symbols = parse_expression(rhs);
+	char *lhs_symbols_str = serialize_symbols(lhs_symbols);
+	char *rhs_symbols_str = serialize_symbols(rhs_symbols);
 
-	// TODO construct / fetch rule struct and add to rule graph
+	// resolve rhs rule
+		// search rhs rule
+		// if not found
+			// construct new rule and add in rulegrapg and increm vertex count
+			// return new rule address
+		// if found
+			// return for resolver assignation later
+	Rule *rhs_rule = search_for_rule(rule_graph, rhs_symbols_str, 0);
+	if (!rhs_rule)
+	{
+		rhs_rule = generate_rule_from(rhs_symbols);
+		rule_graph->all_rules_vertices[rule_graph->vertex_count++] = rhs_rule;
+	}
 
+	// resolve lhs rule
+		// search lhs rule
+		// if not found, construct new rule with rhs resolver, add rulegrapg and increm vertex count
+		// if found, check for existing resolver, and add resolver if old resolver does not exist
+	Rule *lhs_rule = search_for_rule(rule_graph, lhs_symbols_str, 1);
+	if (!lhs_rule)
+	{
+		lhs_rule = generate_rule_from(lhs_symbols);
+		if(!strcmp(resolver, IFF_RESOLVER))
+		{
+			lhs_rule->resolve_type = IFF;
+			lhs_rule->iff = rhs_rule;
+		}
+		else
+		{
+			lhs_rule->resolve_type = IMPLIES;
+			lhs_rule->implies = rhs_rule;
+		}
+		rule_graph->all_rules_vertices[rule_graph->vertex_count++] = lhs_rule;
+	}
+	else {
+		if (lhs_rule->resolve_type != NO_RESOLVE)
+		{
+			EPRINTF("Resolve already found at rule %s\n", lhs_symbols_str);
+			return 1;
+		}
+
+		if(!strcmp(resolver, IFF_RESOLVER))
+		{
+			lhs_rule->resolve_type = IFF;
+			lhs_rule->iff = rhs_rule;
+		}
+		else
+		{
+			lhs_rule->resolve_type = IMPLIES;
+			lhs_rule->implies = rhs_rule;
+		}
+	}
+	
 	printf("rule %s with %s (%s)\n", lhs, rhs, rule);
 	// printf("resolver (%s)\n", resolver);
-
+	free(lhs_symbols_str);
+	free(rhs_symbols_str);
 }
 
 void parse_input_file(int fd, Rulegraph* rule_graph, char* query_list) // take in array of rules
@@ -243,7 +299,7 @@ int main(int argc, char *argv[])
 	}
 
 	// start parsing and get list of rules, query and facts
-	Rulegraph *rule_graph = (Rulegraph *)malloc(sizeof(Rulegraph)); 
+	Rulegraph *rule_graph = generate_default_rulegraph();
 	char *query_list = calloc(ALPHA_COUNT, 1);
 	parse_input_file(fd, rule_graph, query_list);
 
@@ -270,7 +326,7 @@ int main(int argc, char *argv[])
 	}
 	
 
-	free(rule_graph);
+	free_rulegraph(rule_graph);
 	free(query_list);
 	printf("OK\n");
 	return 0;

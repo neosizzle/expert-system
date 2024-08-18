@@ -29,6 +29,7 @@ typedef enum ResolveType
 {
 	IMPLIES,
 	IFF,
+	NO_RESOLVE
 } ResolveType;
 
 typedef struct Symbol
@@ -62,5 +63,10 @@ Symbol *generate_symbol_from(char* str, int is_inner, Symbol** inner_symbols);
 void free_symbol(Symbol *symbol);
 void free_symbol_list(Symbol **symbols);
 char *serialize_symbols(Symbol** symbols);
+
+Rule* search_for_rule(Rulegraph* rg, char* input_symbols, int is_lhs);
+void free_rulegraph(Rulegraph *rg);
+Rulegraph *generate_default_rulegraph();
+Rule *generate_rule_from(Symbol** symbol_list);
 
 #endif  //!__RULES__H__
