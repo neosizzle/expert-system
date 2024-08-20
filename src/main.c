@@ -127,12 +127,11 @@ int parse_facts_or_query(char* line, char* symbol_str_list) {
 		}
 		if (j == ALPHA_COUNT)
 		{
-			EPRINTF("Facts are too much, more than %d\n", ALPHA_COUNT)
+			EPRINTF("Facts/ query are too much, more than %d\n", ALPHA_COUNT)
 			return 1;
 		}
 	}
-
-	printf("fact list is now %s\n", symbol_str_list);
+	
 	return 0;
 }
 
@@ -151,7 +150,7 @@ void parse_rule(char* line, Rulegraph* rule_graph) {
 	else
 	{
 		EPRINTF("No resolve found at rule %s\n", rule);
-		return 1;
+		return;
 	}	
 
 	// clean the rule and split into 2 sides
@@ -180,6 +179,8 @@ void parse_rule(char* line, Rulegraph* rule_graph) {
 		rhs_rule = generate_rule_from(rhs_symbols);
 		rule_graph->all_rules_vertices[rule_graph->vertex_count++] = rhs_rule;
 	}
+	else
+		free_symbol_list(rhs_symbols);
 
 	// resolve lhs rule
 		// search lhs rule
@@ -205,7 +206,7 @@ void parse_rule(char* line, Rulegraph* rule_graph) {
 		if (lhs_rule->resolve_type != NO_RESOLVE)
 		{
 			EPRINTF("Resolve already found at rule %s\n", lhs_symbols_str);
-			return 1;
+			return;
 		}
 
 		if(!strcmp(resolver, IFF_RESOLVER))
@@ -220,17 +221,13 @@ void parse_rule(char* line, Rulegraph* rule_graph) {
 		}
 	}
 	
-	printf("rule %s with %s (%s)\n", lhs, rhs, rule);
-	// printf("resolver (%s)\n", resolver);
+	// printf("rule %s with %s @ %s\n", lhs, rhs, rule);
 	free(lhs_symbols_str);
 	free(rhs_symbols_str);
 }
 
-void parse_input_file(int fd, Rulegraph* rule_graph, char* query_list) // take in array of rules
+void parse_input_file(int fd, Rulegraph* rule_graph, char* query_list, char* facts_list) // take in array of rules
 {
-	char *facts_list = calloc(ALPHA_COUNT, 1);
-	Rule* rules = (Rule*)malloc(sizeof(Rule) * 32); // shh... dont tell evaluator that I cap the rules size
-
 	for (char* line = get_next_line(fd); line != 0; free(line), line = get_next_line(fd))
 	{
 		// if line starts with # or blank line, continue
@@ -248,40 +245,8 @@ void parse_input_file(int fd, Rulegraph* rule_graph, char* query_list) // take i
 		// else, parse rule
 		else
 			parse_rule(line, rule_graph);
-
-		// free(line);
-		// line = get_next_line(fd);
 	}
 
-	// TODO construct rule graph
-
-	free(facts_list);
-}
-
-void test() {
-	printf("From test\n");
-	char* line = "A + (B + (C + D) + E + (F + G) + (F2 + G2 + (F2))) + H";
-	// char* line = "A + ((B + C) + (D + E)) + (G + F)";
-	// char *line = "(!A + B) + C";
-	// char* line = "()";
-	Symbol** symbol_list = parse_expression(line);
-	char *symbol_str = serialize_symbols(symbol_list);
-	printf("%s\n", symbol_str);
-	free(symbol_str);
-
-	// Symbol* s1 = generate_symbol_from("A", 0, 0);
-	// Symbol* s2 = generate_symbol_from("+", 0, 0);
-	// Symbol* s3 = generate_symbol_from("!B", 0, 0);
-
-	// free_symbol(s1);
-
-	// Symbol** symbol_list = (Symbol**)calloc(16, sizeof(Symbol*));
-	// symbol_list[0] = s1;
-	// symbol_list[1] = s2;
-	// symbol_list[2] = s3;
-
-	free_symbol_list(symbol_list);
-	exit(0);
 }
 
 int main(int argc, char *argv[])
@@ -301,10 +266,14 @@ int main(int argc, char *argv[])
 	// start parsing and get list of rules, query and facts
 	Rulegraph *rule_graph = generate_default_rulegraph();
 	char *query_list = calloc(ALPHA_COUNT, 1);
-	parse_input_file(fd, rule_graph, query_list);
+	char *facts_list = calloc(ALPHA_COUNT, 1);
+
+	parse_input_file(fd, rule_graph, query_list, facts_list);
 
 	// TODO update the symbols here w/ facts here because we are cool and lazy
+	update_rule_graph_with_facts(rule_graph, facts_list);
 
+	print_rulegraph(rule_graph);
 	// TODO run expert system with said rules and query
 
 	// busy spin
@@ -327,6 +296,7 @@ int main(int argc, char *argv[])
 	
 
 	free_rulegraph(rule_graph);
+	free(facts_list);
 	free(query_list);
 	printf("OK\n");
 	return 0;

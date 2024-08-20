@@ -66,7 +66,6 @@ char *serialize_symbols(Symbol** symbols)
 		else
 			strcat(res, symbol->str_repr);
 		strcat(res, " ");
-		// printf("%s\n", symbol->str_repr);
 	}
 	
 	return res;
@@ -146,9 +145,11 @@ Rule* search_for_rule(Rulegraph* rg, char* input_symbols, int is_lhs)
 			symbols_str = serialize_symbols(rule->symbol_list);
 		else
 			symbols_str = strdup("");
-		printf("searching at %s\n", symbols_str);
 		if (!strcmp(input_symbols, symbols_str))
+		{
+			free(symbols_str);
 			return rule;
+		}
 		free(symbols_str);
 	}
 	return NULL;
@@ -161,5 +162,91 @@ Rule *generate_rule_from(Symbol** symbol_list)
 	res->confirmed_result = RESULT_INIT;
 	res->iff = NULL;
 	res->implies = NULL;
+	res->resolve_type = NO_RESOLVE;
 	return res;
+}
+
+int update_symbol_with_facts(Symbol *symbol, char *facts)
+{
+	if (symbol->type == OPERATOR)
+		return 0;
+
+	if (symbol->type == VARIABLE || symbol->type == FACT)
+	{
+		int char_idx = 0;
+		if (symbol->is_negated)
+			char_idx = 1;
+		if (strcspn(facts, &(symbol->str_repr[char_idx])) != strlen(facts))
+		{
+			symbol->result = TRUE;
+			symbol->type = FACT;
+		}
+		else {
+			symbol->result = RESULT_INIT;
+			symbol->type = VARIABLE;
+		}
+
+		return 0;
+	}
+	
+	int i = -1;
+	while (symbol->inner_symbols[++i])
+	{
+		Symbol *inner_symbol = symbol->inner_symbols[i];
+		update_symbol_with_facts(inner_symbol, facts);
+	}
+	
+	return 0;
+}
+
+int update_rule_graph_with_facts(Rulegraph* rule_graph, char *facts)
+{
+	int i = -1;
+	while (++i < rule_graph->vertex_count)
+	{
+		Rule* rule = rule_graph->all_rules_vertices[i];
+		
+		int j = -1;
+		while (rule->symbol_list[++j])
+		{
+			Symbol *symbol = rule->symbol_list[j];
+			if (symbol->type == OPERATOR)
+				continue;
+			update_symbol_with_facts(symbol, facts);
+		}
+		
+	}
+	return 0;
+}
+
+void print_rulegraph(Rulegraph* rule_graph)
+{
+	for (size_t i = 0; rule_graph->all_rules_vertices[i]; i++)
+	{
+		Rule* rule = rule_graph->all_rules_vertices[i];
+		Symbol **lhs_symbols = rule->symbol_list;
+		char *lhs_symbols_str = serialize_symbols(lhs_symbols);
+		
+		char *rhs_symbols_str = 0;
+		char *resolve = 0;
+		
+		if (rule->resolve_type == NO_RESOLVE)
+		{
+			free(lhs_symbols_str);
+			continue;
+		}
+		if (rule->resolve_type == IMPLIES)
+		{
+			rhs_symbols_str = serialize_symbols(rule->implies->symbol_list);
+			resolve = " => ";
+		}
+		if (rule->resolve_type == IFF)
+		{
+			rhs_symbols_str = serialize_symbols(rule->iff->symbol_list);
+			resolve = " <=> " ;
+		}
+		printf("%s%s%s\n", lhs_symbols_str, resolve, rhs_symbols_str);
+		free(lhs_symbols_str);
+		free(rhs_symbols_str);
+	}
 }
