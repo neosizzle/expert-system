@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #define  ALPHA_COUNT  26
 #define IMPL_RESOLVER " => "
@@ -280,8 +281,16 @@ int main(int argc, char *argv[])
 	while (1)
 	{
 		// prompt for fact change
+		write(1, "prompt: ", 8);
 		char *prompt = get_next_line(0);
-		printf("prompt: %s\n", prompt);
+
+		if (strlen(prompt) < ALPHA_COUNT)
+		{
+			printf("updating facts: %s\n", prompt);
+			memset(facts_list, ALPHA_COUNT, 0);
+			memcpy(facts_list, prompt, strlen(prompt));
+			update_rule_graph_with_facts(rule_graph, facts_list);
+		}
 
 		// exit prompt
 		if (!strcmp(prompt, "exit\n"))
