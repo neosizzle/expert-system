@@ -1,0 +1,22 @@
+A => B | C
+B | C => D
+=A
+?D
+
+
+# What is D? Need to find out what is rule B | C
+# 	Need to solve rule B | C
+#		What is B? Need to find out what is rule A
+#			What is A?
+#				true by fact
+#			Rule A is true
+#		LHS is true, implies that rule B | C is true
+#		Possible values of B = [true, false, true]
+#		Possible values of C = [true, true, false] -> cached
+#		What is C?
+#		Possible values of C = [true, true, false] -> cached
+# LHS is true due to mapping of all symbols's possible values are true
+# LHS is true, implies rule D is true
+# Possible values of D = [true]
+# [true] by deduction
+

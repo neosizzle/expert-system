@@ -22,7 +22,8 @@ typedef enum Result
 	RESULT_INIT,
 	TRUE,
 	FALSE,
-	UNDEFINED
+	PSEUDO_TRUE,
+	PSEUDO_FALSE,
 } Result;
 
 typedef enum ResolveType

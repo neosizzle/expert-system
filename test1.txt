@@ -1,0 +1,13 @@
+G => A
+=G
+?A
+
+
+# What is A? Need to find what is G
+#	Need to solve LHS rule G
+# 		What is G?
+# 			true by fact
+#	rule G is true
+# LHS is true, implies rule A is true
+# Possible values of A = [true]
+# [true] by deduction

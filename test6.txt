@@ -1,0 +1,28 @@
+L + M => K
+O + P => L + N
+N => M
+=OP
+?K
+
+
+# What is K? Need to find what is L + M
+#	Need to solve rule L + M
+# 		What is L?
+#			Need to solve rule O + P
+#				What is O?
+#					true by fact
+#				What is P?
+#					true by fact
+#			Rule O + P is true
+#		LHS is true, implies rule L + N is true
+#		Possible values of L = [true]
+#		Possible values of N = [true] -> cached
+# 		What is M?
+#			Need to solve rule N
+#				What is N?
+#				Possible values of N = [true] <- from cache
+#			LHS is true, implies rule M is true
+#		Possible values of M = [true]
+# LHS is true, implies rule K is true
+# Possible values of K = [true]
+# [true] by deduction

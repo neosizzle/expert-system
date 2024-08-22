@@ -1,0 +1,17 @@
+A + B => C + D
+=A
+?C
+
+
+# What is C? Need to find what is A + B
+# 	Need to solve rule A + B
+# 		What is A?
+# 			false by fact
+# 		What is B?
+# 			true by fact
+# 	Rule A + B is true
+# LHS is false, implies rule C + D can be false or true
+# What is D?
+#	false by fact
+# Possible values of C = [false]
+# [false] by deduction

@@ -1,0 +1,10 @@
+Parenthesis handling
+Multi operator rules
+Priority resolution of RHS symbols (Other rules -> hard RHS result constraints -> false fact)
+
+TODO
+rule search by single symbol on rhs
+implication switch
+Binary gate solvers
+logic to traverse symbol list as binary
+Cache to store symbols to results which maps both negated and non negated symbols

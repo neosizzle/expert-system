@@ -1,0 +1,19 @@
+G => A
+E => A
+=E
+?A
+
+
+# What is A? Need to find what is G; Need to find what is E
+#	Need to solve rule G
+# 		What is G?
+# 			false by fact
+#	Rule G is false
+# LHS is false, implies rule A can be true or false
+#	Need to solve rule E
+# 		What is E?
+# 			 true by fact
+#	Rule E is true
+# LHS is true, implies rule A is true
+# Possible values of A = [true, false], [true]
+# [true] by multi-implication rule
