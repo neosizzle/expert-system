@@ -8,4 +8,4 @@ implication switch
 Binary gate solvers
 logic to traverse symbol list as binary
 Cache to store symbols to results which maps both negated and non negated symbols
-Integrate mobile IDE
+Integrate mobile IDE 
