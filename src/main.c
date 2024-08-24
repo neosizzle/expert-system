@@ -1,6 +1,7 @@
 #include "ft_macros.h"
 #include "rules.h"
 #include "get_next_line.h"
+#include "engine.h"
 
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -8,17 +9,19 @@
 #include <string.h>
 #include <unistd.h>
 
-#define  ALPHA_COUNT  26
+#define ALPHA_COUNT 26
 #define IMPL_RESOLVER " => "
 #define IFF_RESOLVER " <=> "
 
-int find_matching_rp(char *line) {
+int find_matching_rp(char *line)
+{
 	int res;
 	int parent_stack;
 
 	parent_stack = 0;
 	res = -1;
-	while (line[++res]) {
+	while (line[++res])
+	{
 		if (line[res] == '(')
 			parent_stack += 1;
 		if (line[res] == ')')
@@ -31,9 +34,10 @@ int find_matching_rp(char *line) {
 	return -1;
 }
 
-Symbol** parse_expression(char *line) {
-	Symbol** all_inner_symbols[8]; // shh.. dont tell bocal i hard allocate here
-	Symbol** res = (Symbol**)calloc(16, sizeof(Symbol*)); // shh.. dont tell bocal i hard allocate here also
+Symbol **parse_expression(char *line)
+{
+	Symbol **all_inner_symbols[8];							// shh.. dont tell bocal i hard allocate here
+	Symbol **res = (Symbol **)calloc(16, sizeof(Symbol *)); // shh.. dont tell bocal i hard allocate here also
 
 	int inner_symbols_idx = 0;
 
@@ -41,7 +45,8 @@ Symbol** parse_expression(char *line) {
 	int i = strcspn(line, "(");
 
 	// we have '(', so we need to process the things inside of the '(' first
-	while (i < strlen(line)) {
+	while (i < strlen(line))
+	{
 		// i will always point to the '(', so we will find the matching ')' here.
 		int matching_rp = find_matching_rp(line + i + 1); // offset + 0 index?
 
@@ -64,16 +69,17 @@ Symbol** parse_expression(char *line) {
 	int pstack = 0;
 	int res_idx = 0;
 	inner_symbols_idx = 0;
-	
+
 	// re-iterate through all tokens now, not just the '('s
 	while (curr_token)
 	{
-		// if we found a '(', replace the entire section with an 
+		// if we found a '(', replace the entire section with an
 		// inner symbol with symbol lists
 		if (strcspn(curr_token, "(") < strlen(curr_token))
 		{
 			// first '(' found, find symbol list to replace
-			if (pstack == 0) {
+			if (pstack == 0)
+			{
 				res[res_idx] = generate_symbol_from(curr_token, 1, all_inner_symbols[inner_symbols_idx]);
 				res_idx += 1;
 				inner_symbols_idx += 1;
@@ -98,7 +104,8 @@ Symbol** parse_expression(char *line) {
 		}
 
 		// real symbol which is not in parenthesis now, parse it normally
-		if (pstack == 0) {
+		if (pstack == 0)
+		{
 			res[res_idx] = generate_symbol_from(curr_token, 0, 0);
 			res_idx += 1;
 		}
@@ -109,14 +116,15 @@ Symbol** parse_expression(char *line) {
 	return res;
 }
 
-int parse_facts_or_query(char* line, char* symbol_str_list) {
+int parse_facts_or_query(char *line, char *symbol_str_list)
+{
 	int i = 0;
 	char *facts = strtok(line, "#");
 	while (++i)
 	{
 		if (facts[i] == '\n' || facts[i] == 0 || facts[i] == ' ')
 			break;
-		
+
 		int j = -1;
 		while (j++ < ALPHA_COUNT)
 		{
@@ -132,11 +140,12 @@ int parse_facts_or_query(char* line, char* symbol_str_list) {
 			return 1;
 		}
 	}
-	
+
 	return 0;
 }
 
-void parse_rule(char* line, Rulegraph* rule_graph) {
+void parse_rule(char *line, Rulegraph *rule_graph)
+{
 	char *rule = strtok(line, "#");
 	char lhs[128] = {0};
 	char rhs[128] = {0};
@@ -152,14 +161,14 @@ void parse_rule(char* line, Rulegraph* rule_graph) {
 	{
 		EPRINTF("No resolve found at rule %s\n", rule);
 		return;
-	}	
+	}
 
 	// clean the rule and split into 2 sides
 	if (rule[strlen(rule) - 1] == '\n')
 		rule[strlen(rule) - 1] = 0;
 	strncpy(lhs, rule, resolver_pos - rule);
 	strncpy(rhs, resolver_pos + strlen(resolver), (strlen(rule) - strlen(lhs) - strlen(resolver)));
-	
+
 	// get the expressions for both sides
 	// TODO for rhs, we search previous rules for the same symbols
 	Symbol **lhs_symbols = parse_expression(lhs);
@@ -168,12 +177,12 @@ void parse_rule(char* line, Rulegraph* rule_graph) {
 	char *rhs_symbols_str = serialize_symbols(rhs_symbols);
 
 	// resolve rhs rule
-		// search rhs rule
-		// if not found
-			// construct new rule and add in rulegrapg and increm vertex count
-			// return new rule address
-		// if found
-			// return for resolver assignation later
+	// search rhs rule
+	// if not found
+	// construct new rule and add in rulegrapg and increm vertex count
+	// return new rule address
+	// if found
+	// return for resolver assignation later
 	Rule *rhs_rule = search_for_rule(rule_graph, rhs_symbols_str, 0);
 	if (!rhs_rule)
 	{
@@ -184,14 +193,14 @@ void parse_rule(char* line, Rulegraph* rule_graph) {
 		free_symbol_list(rhs_symbols);
 
 	// resolve lhs rule
-		// search lhs rule
-		// if not found, construct new rule with rhs resolver, add rulegrapg and increm vertex count
-		// if found, check for existing resolver, and add resolver if old resolver does not exist
+	// search lhs rule
+	// if not found, construct new rule with rhs resolver, add rulegrapg and increm vertex count
+	// if found, check for existing resolver, and add resolver if old resolver does not exist
 	Rule *lhs_rule = search_for_rule(rule_graph, lhs_symbols_str, 1);
 	if (!lhs_rule)
 	{
 		lhs_rule = generate_rule_from(lhs_symbols);
-		if(!strcmp(resolver, IFF_RESOLVER))
+		if (!strcmp(resolver, IFF_RESOLVER))
 		{
 			lhs_rule->resolve_type = IFF;
 			lhs_rule->iff = rhs_rule;
@@ -203,14 +212,15 @@ void parse_rule(char* line, Rulegraph* rule_graph) {
 		}
 		rule_graph->all_rules_vertices[rule_graph->vertex_count++] = lhs_rule;
 	}
-	else {
+	else
+	{
 		if (lhs_rule->resolve_type != NO_RESOLVE)
 		{
 			EPRINTF("Resolve already found at rule %s\n", lhs_symbols_str);
 			return;
 		}
 
-		if(!strcmp(resolver, IFF_RESOLVER))
+		if (!strcmp(resolver, IFF_RESOLVER))
 		{
 			lhs_rule->resolve_type = IFF;
 			lhs_rule->iff = rhs_rule;
@@ -221,15 +231,15 @@ void parse_rule(char* line, Rulegraph* rule_graph) {
 			lhs_rule->implies = rhs_rule;
 		}
 	}
-	
+
 	// printf("rule %s with %s @ %s\n", lhs, rhs, rule);
 	free(lhs_symbols_str);
 	free(rhs_symbols_str);
 }
 
-void parse_input_file(int fd, Rulegraph* rule_graph, char* query_list, char* facts_list) // take in array of rules
+void parse_input_file(int fd, Rulegraph *rule_graph, char *query_list, char *facts_list) // take in array of rules
 {
-	for (char* line = get_next_line(fd); line != 0; free(line), line = get_next_line(fd))
+	for (char *line = get_next_line(fd); line != 0; free(line), line = get_next_line(fd))
 	{
 		// if line starts with # or blank line, continue
 		if (line[0] == '#' || line[0] == '\n')
@@ -247,20 +257,21 @@ void parse_input_file(int fd, Rulegraph* rule_graph, char* query_list, char* fac
 		else
 			parse_rule(line, rule_graph);
 	}
-
 }
 
 int main(int argc, char *argv[])
 {
-	if (argc != 2) {
+	if (argc != 2)
+	{
 		EPRINTF("Usage: %s [input_file]\n", argv[0]);
 		return 1;
 	}
-	
+
 	// open file
 	char *input_filename = argv[1];
 	int fd = open(input_filename, O_RDONLY);
-	if (fd < 0) {
+	if (fd < 0)
+	{
 		DIE_OS(fd, "Failed to open file %s\n", input_filename);
 	}
 
@@ -273,9 +284,17 @@ int main(int argc, char *argv[])
 
 	// TODO update the symbols here w/ facts here because we are cool and lazy
 	update_rule_graph_with_facts(rule_graph, facts_list);
-
 	print_rulegraph(rule_graph);
+
 	// TODO run expert system with said rules and query
+	Rule *test[8] = {0};
+	locate_conditional_rule(rule_graph, "B", test);
+	for (size_t i = 0; test[i]; i++)
+	{
+		char *out = serialize_symbols(test[i]->symbol_list);
+		printf("hmm %s\n", out);
+		free(out);
+	}
 
 	// busy spin
 	while (1)
@@ -302,7 +321,6 @@ int main(int argc, char *argv[])
 		// apply changes and run expert system again
 		free(prompt);
 	}
-	
 
 	free_rulegraph(rule_graph);
 	free(facts_list);

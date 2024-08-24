@@ -3,35 +3,38 @@
 #include <string.h>
 #include <stdio.h>
 
-Symbol *generate_symbol_from(char* str, int is_inner, Symbol** inner_symbols){
+Symbol *generate_symbol_from(char *str, int is_inner, Symbol **inner_symbols)
+{
 	Symbol *res = (Symbol *)malloc(sizeof(Symbol));
 	res->result = RESULT_INIT;
 	res->is_negated = 0;
 	if (str[0] == '!')
 		res->is_negated = 1;
-		
-	if (is_inner) {
+
+	if (is_inner)
+	{
 		res->type = INNER;
-		res->operator = NOP;
+		res->operator= NOP;
 		res->inner_symbols = inner_symbols;
 		res->str_repr = strdup("<Inner symbols>");
 	}
-	else {
+	else
+	{
 		// check for operator
 		if (strcspn(str, "+^|") < strlen(str))
 		{
 			res->type = OPERATOR;
 			if (strcspn(str, "+") < strlen(str))
-				res->operator = AND;
+				res->operator= AND;
 			else if (strcspn(str, "|") < strlen(str))
-				res->operator = OR;
+				res->operator= OR;
 			else
-				res->operator = XOR;	
+				res->operator= XOR;
 		}
 		else
 		{
 			res->type = VARIABLE;
-			res->operator = NOP;
+			res->operator= NOP;
 		}
 
 		res->inner_symbols = NULL;
@@ -40,12 +43,12 @@ Symbol *generate_symbol_from(char* str, int is_inner, Symbol** inner_symbols){
 	return res;
 }
 
-void serialize_symbols_inner(Symbol* inner_symbol, char* res)
+void serialize_symbols_inner(Symbol *inner_symbol, char *res)
 {
 	strcat(res, "( ");
 	for (size_t i = 0; inner_symbol->inner_symbols[i]; i++)
 	{
-		Symbol* symbol = inner_symbol->inner_symbols[i];
+		Symbol *symbol = inner_symbol->inner_symbols[i];
 		if (symbol->type == INNER)
 			serialize_symbols_inner(symbol, res);
 		else
@@ -55,19 +58,19 @@ void serialize_symbols_inner(Symbol* inner_symbol, char* res)
 	strcat(res, ")");
 }
 
-char *serialize_symbols(Symbol** symbols)
+char *serialize_symbols(Symbol **symbols)
 {
-	char* res = (char*)calloc(256, sizeof(char*)); // shh.. dont tell bocal i hard allocate here also
+	char *res = (char *)calloc(256, sizeof(char *)); // shh.. dont tell bocal i hard allocate here also
 	for (size_t i = 0; symbols[i]; i++)
 	{
-		Symbol* symbol = symbols[i];
+		Symbol *symbol = symbols[i];
 		if (symbol->type == INNER)
 			serialize_symbols_inner(symbol, res);
 		else
 			strcat(res, symbol->str_repr);
 		strcat(res, " ");
 	}
-	
+
 	return res;
 }
 
@@ -82,12 +85,12 @@ void free_symbol(Symbol *symbol)
 void free_symbol_list(Symbol **symbols)
 {
 	int i = -1;
-	while(symbols[++i])
+	while (symbols[++i])
 		free_symbol(symbols[i]);
 	free(symbols);
 }
 
-void free_rule(Rule* rule)
+void free_rule(Rule *rule)
 {
 	if (rule->symbol_list)
 		free_symbol_list(rule->symbol_list);
@@ -104,7 +107,7 @@ void free_rule(Rule* rule)
 void free_rule_list(Rule **rules)
 {
 	int i = -1;
-	while(rules[++i])
+	while (rules[++i])
 		free_rule(rules[i]);
 	free(rules);
 }
@@ -118,24 +121,24 @@ void free_rulegraph(Rulegraph *rg)
 
 Rulegraph *generate_default_rulegraph()
 {
-	Rulegraph *res = (Rulegraph *)calloc(1, sizeof(Rulegraph)); 
-	res->all_rules_vertices = (Rule**)calloc(32, sizeof(Rule*)); // hard allocate
+	Rulegraph *res = (Rulegraph *)calloc(1, sizeof(Rulegraph));
+	res->all_rules_vertices = (Rule **)calloc(32, sizeof(Rule *)); // hard allocate
 	res->vertex_count = 0;
 	return res;
 }
 
-Rule* search_for_rule(Rulegraph* rg, char* input_symbols, int is_lhs)
+Rule *search_for_rule(Rulegraph *rg, char *input_symbols, int is_lhs)
 {
-	Rule** rules = rg->all_rules_vertices;
+	Rule **rules = rg->all_rules_vertices;
 	int i = -1;
 	while (rules[++i])
 	{
-		Rule* rule = NULL;
+		Rule *rule = NULL;
 		if (is_lhs)
 		{
 			if (rules[i]->implies)
 				rule = rules[i]->implies;
-			else 
+			else
 				rule = rules[i]->iff;
 		}
 		else
@@ -155,9 +158,9 @@ Rule* search_for_rule(Rulegraph* rg, char* input_symbols, int is_lhs)
 	return NULL;
 }
 
-Rule *generate_rule_from(Symbol** symbol_list)
+Rule *generate_rule_from(Symbol **symbol_list)
 {
-	Rule *res = (Rule*)calloc(1, sizeof(Rule));
+	Rule *res = (Rule *)calloc(1, sizeof(Rule));
 	res->symbol_list = symbol_list;
 	res->confirmed_result = RESULT_INIT;
 	res->iff = NULL;
@@ -181,31 +184,32 @@ int update_symbol_with_facts(Symbol *symbol, char *facts)
 			symbol->result = TRUE;
 			symbol->type = FACT;
 		}
-		else {
+		else
+		{
 			symbol->result = RESULT_INIT;
 			symbol->type = VARIABLE;
 		}
 
 		return 0;
 	}
-	
+
 	int i = -1;
 	while (symbol->inner_symbols[++i])
 	{
 		Symbol *inner_symbol = symbol->inner_symbols[i];
 		update_symbol_with_facts(inner_symbol, facts);
 	}
-	
+
 	return 0;
 }
 
-int update_rule_graph_with_facts(Rulegraph* rule_graph, char *facts)
+int update_rule_graph_with_facts(Rulegraph *rule_graph, char *facts)
 {
 	int i = -1;
 	while (++i < rule_graph->vertex_count)
 	{
-		Rule* rule = rule_graph->all_rules_vertices[i];
-		
+		Rule *rule = rule_graph->all_rules_vertices[i];
+
 		int j = -1;
 		while (rule->symbol_list[++j])
 		{
@@ -214,22 +218,21 @@ int update_rule_graph_with_facts(Rulegraph* rule_graph, char *facts)
 				continue;
 			update_symbol_with_facts(symbol, facts);
 		}
-		
 	}
 	return 0;
 }
 
-void print_rulegraph(Rulegraph* rule_graph)
+void print_rulegraph(Rulegraph *rule_graph)
 {
 	for (size_t i = 0; rule_graph->all_rules_vertices[i]; i++)
 	{
-		Rule* rule = rule_graph->all_rules_vertices[i];
+		Rule *rule = rule_graph->all_rules_vertices[i];
 		Symbol **lhs_symbols = rule->symbol_list;
 		char *lhs_symbols_str = serialize_symbols(lhs_symbols);
-		
+
 		char *rhs_symbols_str = 0;
 		char *resolve = 0;
-		
+
 		if (rule->resolve_type == NO_RESOLVE)
 		{
 			free(lhs_symbols_str);
@@ -243,7 +246,7 @@ void print_rulegraph(Rulegraph* rule_graph)
 		if (rule->resolve_type == IFF)
 		{
 			rhs_symbols_str = serialize_symbols(rule->iff->symbol_list);
-			resolve = " <=> " ;
+			resolve = " <=> ";
 		}
 		printf("%s%s%s\n", lhs_symbols_str, resolve, rhs_symbols_str);
 		free(lhs_symbols_str);
