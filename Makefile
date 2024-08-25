@@ -1,7 +1,7 @@
 NAME=expertsystem
 CC = gcc -fsanitize=address -g3
 # CC = gcc
-CC_FLAGS = -Wall -Wextra
+CC_FLAGS = -Wall -Wextra -lm -ldl
 INCS = -Iinclude
 BUILDDIR=build/
 SRCS = ${wildcard src/*.c}

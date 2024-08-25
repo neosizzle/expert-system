@@ -3,8 +3,14 @@ Multi operator rules
 Priority resolution of RHS symbols (Other rules -> hard RHS result constraints -> false fact)
 
 TODO
-rule search by single symbol on rhs
+rule search by single symbol on rhs OK
 implication switch
-Binary gate solvers
+Binary gate solvers OK
+
+generate possible valeus for all symbols in symbollist when rule is true  / false
+- should be built in truth table generator
+- should be exaustive on both side, allow duplicates if needed
+- for the mapping and counting using the reuslt when resolving, use the number of maps of the smallest mapping if that number is in the same rule
+
 logic to traverse symbol list as binary (1 symbol, 1 operator, 1 symbol for binary gate solver)
 Cache to store symbols to results which maps both negated and non negated symbols

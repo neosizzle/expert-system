@@ -1,6 +1,9 @@
 #ifndef __RULES__H__
 #define __RULES__H__
 
+# define FT_TRUE 1
+# define FT_FALSE 0
+
 typedef enum SymbolType
 {
 	VARIABLE,
@@ -17,15 +20,6 @@ typedef enum Operator
 	NOP,
 } Operator;
 
-typedef enum Result
-{
-	RESULT_INIT,
-	TRUE,
-	FALSE,
-	PSEUDO_TRUE,
-	PSEUDO_FALSE,
-} Result;
-
 typedef enum ResolveType
 {
 	IMPLIES,
@@ -40,14 +34,13 @@ typedef struct Symbol
 	struct Symbol** inner_symbols;
 	int is_negated;
 	char* str_repr;
-	Result result;
+	int *possible_results;
 } Symbol;
 
 typedef struct Rule
 {
 	Symbol** symbol_list;
-	Result confirmed_result;
-	// Result *possible_results;
+	int confirmed_result;
 	int ref_cnt; // used for freeing
 	ResolveType resolve_type;
 	struct Rule* implies;

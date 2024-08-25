@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <math.h>
 
 #define ALPHA_COUNT 26
 #define IMPL_RESOLVER " => "
@@ -287,14 +288,48 @@ int main(int argc, char *argv[])
 	print_rulegraph(rule_graph);
 
 	// TODO run expert system with said rules and query
-	Rule *test[8] = {0};
-	locate_conditional_rule(rule_graph, "B", test);
-	for (size_t i = 0; test[i]; i++)
+	int num_elems = 3;
+	int total_rows = pow(2, num_elems);
+	int **table = (int **)calloc(total_rows, sizeof(int *));
+	for (size_t i = 0; i < total_rows; i++)
+		table[i] = (int *)calloc(num_elems, sizeof(int));
+	int* aux = (int *)calloc(num_elems, sizeof(int));
+	int curr_table_y = 0;
+
+	generate_truth_permutations(
+		table,
+		num_elems,
+		&curr_table_y,
+		0,
+		aux
+	);
+
+	Symbol *s1 = generate_symbol_from("A", 0, 0);
+	Symbol *s2 = generate_symbol_from("+", 0, 0);
+	Symbol *s3 = generate_symbol_from("B", 0, 0);
+	Symbol *s4 = generate_symbol_from("|", 0, 0);
+	Symbol *s5 = generate_symbol_from("C", 0, 0);
+	Symbol *s6 = generate_symbol_from("+", 0, 0);
+	Symbol *s7 = generate_symbol_from("C", 0, 0);
+
+	Symbol *mapping[4] = {s1, s3, s5, 0};
+	Symbol *symbols[8] = {s1, s2, s3, s4, s5, s6, s7, 0};
+
+	resolve_truth_permutations(
+		mapping,
+		table,
+		curr_table_y,
+		symbols
+	);
+
+	printf("map==========\n");
+	for (size_t i = 0; i < total_rows; i++)
 	{
-		char *out = serialize_symbols(test[i]->symbol_list);
-		printf("hmm %s\n", out);
-		free(out);
+		for (size_t j = 0; j < num_elems; j++)
+			printf("%d ", table[i][j]);
+		printf("\n");
 	}
+
 
 	// busy spin
 	while (1)
