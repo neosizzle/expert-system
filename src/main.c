@@ -330,7 +330,6 @@ int main(int argc, char *argv[])
 		printf("\n");
 	}
 
-
 	// busy spin
 	while (1)
 	{

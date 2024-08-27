@@ -18,4 +18,5 @@ int *resolve_truth_permutations(
 	int table_row_count,
 	Symbol **symbols
 );
+
 #endif  //!__ENGINE__H__
