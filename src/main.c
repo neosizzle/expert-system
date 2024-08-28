@@ -2,6 +2,7 @@
 #include "rules.h"
 #include "get_next_line.h"
 #include "engine.h"
+#include "ft_map.h"
 
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -283,52 +284,77 @@ int main(int argc, char *argv[])
 
 	parse_input_file(fd, rule_graph, query_list, facts_list);
 
-	// TODO update the symbols here w/ facts here because we are cool and lazy
+	// update the symbols here w/ facts here because we are cool and lazy
 	update_rule_graph_with_facts(rule_graph, facts_list);
 	print_rulegraph(rule_graph);
 
 	// TODO run expert system with said rules and query
-	int num_elems = 3;
-	int total_rows = pow(2, num_elems);
-	int **table = (int **)calloc(total_rows, sizeof(int *));
-	for (size_t i = 0; i < total_rows; i++)
-		table[i] = (int *)calloc(num_elems, sizeof(int));
-	int* aux = (int *)calloc(num_elems, sizeof(int));
-	int curr_table_y = 0;
-
-	generate_truth_permutations(
-		table,
-		num_elems,
-		&curr_table_y,
-		0,
-		aux
-	);
-
+	FtMap *map = ft_map_new(16);
 	Symbol *s1 = generate_symbol_from("A", 0, 0);
-	Symbol *s2 = generate_symbol_from("+", 0, 0);
+	int *results1 = malloc(4 * sizeof(int));
+	results1[0] = 0;
+
+	Symbol *s2 = generate_symbol_from("!B", 0, 0);
+	int *results2 = malloc(4 * sizeof(int));
+	results2[0] = 1;
+
+	insert_map(map, s1, results1, 1);
+	insert_map(map, s2, results2, 1);
+
 	Symbol *s3 = generate_symbol_from("B", 0, 0);
-	Symbol *s4 = generate_symbol_from("|", 0, 0);
-	Symbol *s5 = generate_symbol_from("C", 0, 0);
-	Symbol *s6 = generate_symbol_from("+", 0, 0);
-	Symbol *s7 = generate_symbol_from("C", 0, 0);
+	insert_map(map, s2, results1, 1);
+	int *res = query_map(map, s3);
+	printf("res is [%d]\n", res[0]);
+	free(res);
 
-	Symbol *mapping[4] = {s1, s3, s5, 0};
-	Symbol *symbols[8] = {s1, s2, s3, s4, s5, s6, s7, 0};
+	free(results1);
+	free(results2);
+	free_symbol(s1);
+	free_symbol(s2);
+	free_symbol(s3);
 
-	resolve_truth_permutations(
-		mapping,
-		table,
-		curr_table_y,
-		symbols
-	);
+	free_ft_map(map);
+	// int num_elems = 3;
+	// int total_rows = pow(2, num_elems);
+	// int **table = (int **)calloc(total_rows, sizeof(int *));
+	// for (size_t i = 0; i < total_rows; i++)
+	// 	table[i] = (int *)calloc(num_elems, sizeof(int));
+	// int* aux = (int *)calloc(num_elems, sizeof(int));
+	// int curr_table_y = 0;
 
-	printf("map==========\n");
-	for (size_t i = 0; i < total_rows; i++)
-	{
-		for (size_t j = 0; j < num_elems; j++)
-			printf("%d ", table[i][j]);
-		printf("\n");
-	}
+	// generate_truth_permutations(
+	// 	table,
+	// 	num_elems,
+	// 	&curr_table_y,
+	// 	0,
+	// 	aux
+	// );
+
+	// Symbol *s1 = generate_symbol_from("A", 0, 0);
+	// Symbol *s2 = generate_symbol_from("+", 0, 0);
+	// Symbol *s3 = generate_symbol_from("B", 0, 0);
+	// Symbol *s4 = generate_symbol_from("|", 0, 0);
+	// Symbol *s5 = generate_symbol_from("C", 0, 0);
+	// Symbol *s6 = generate_symbol_from("+", 0, 0);
+	// Symbol *s7 = generate_symbol_from("C", 0, 0);
+
+	// Symbol *mapping[4] = {s1, s3, s5, 0};
+	// Symbol *symbols[8] = {s1, s2, s3, s4, s5, s6, s7, 0};
+
+	// resolve_truth_permutations(
+	// 	mapping,
+	// 	table,
+	// 	curr_table_y,
+	// 	symbols
+	// );
+
+	// printf("map==========\n");
+	// for (size_t i = 0; i < total_rows; i++)
+	// {
+	// 	for (size_t j = 0; j < num_elems; j++)
+	// 		printf("%d ", table[i][j]);
+	// 	printf("\n");
+	// }
 
 	// busy spin
 	while (1)
