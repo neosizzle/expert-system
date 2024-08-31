@@ -1,0 +1,22 @@
+
+A => B
+B + C => D
+=C
+?D
+
+# What is D? Need to find out what is rule B + C
+# 	Need to solve rule B + C
+#		What is B? Need to find out what is rule A
+#			What is A?
+#				false by fact
+#			Rule A is false
+#		LHS is false, implies that rule B is [true, false]
+#		Possible values of B = [true, false]
+#		What is C?
+#			true by fact
+#		Possible values of C = [true]
+# LHS is both true or false
+# LHS is true, implies rule D is true
+# LHS is false, implies rule D is false, or true
+# Possible values of D = [true, false]
+# [true, false] by deduction

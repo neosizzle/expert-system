@@ -4,6 +4,32 @@
 
 #define VALUE_LIMIT 16
 
+// FtMap *map = ft_map_new(16);
+// Symbol *s1 = generate_symbol_from("A", 0, 0);
+// int *results1 = malloc(4 * sizeof(int));
+// results1[0] = 0;
+
+// Symbol *s2 = generate_symbol_from("!B", 0, 0);
+// int *results2 = malloc(4 * sizeof(int));
+// results2[0] = 1;
+
+// insert_map(map, s1, results1, 1);
+// insert_map(map, s2, results2, 1);
+
+// Symbol *s3 = generate_symbol_from("B", 0, 0);
+// insert_map(map, s2, results1, 1);
+// int *res = query_map(map, s3);
+// printf("res is [%d]\n", res[0]);
+// free(res);
+
+// free(results1);
+// free(results2);
+// free_symbol(s1);
+// free_symbol(s2);
+// free_symbol(s3);
+
+// free_ft_map(map);
+
 FtMap *ft_map_new(int capacity)
 {
   FtMap *res = (FtMap *)calloc(1, sizeof(FtMap));

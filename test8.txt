@@ -19,4 +19,3 @@ B | C => D
 # LHS is true, implies rule D is true
 # Possible values of D = [true]
 # [true] by deduction
-

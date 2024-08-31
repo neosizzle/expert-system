@@ -14,3 +14,32 @@ generate possible valeus for all symbols in symbollist when rule is true  / fals
 
 logic to traverse symbol list as binary (1 symbol, 1 operator, 1 symbol for binary gate solver)
 Cache to store symbols to results which maps both negated and non negated symbols
+
+resolve_for_symbol -> int* results
+	- check if symbol is in fact. if yes, write true value (overwritable)
+	- check for cache. If found, return clone of cached value
+	- rule search for symbol, should return a list of rules
+	- iterate list of rules
+		- call resolve_for_rule() on curr_rule, should return a list of results
+		- iterate through list of results
+			- check for any inner symbols. If yes, call handle_inner_symbols() and save result somewhere
+			- iterate through rhs symbols
+				- call resolve_for_symbol() for curr_symbol and save them somewhere
+			- check for negation
+			- generate truth table
+			- resolve truth table
+			- filter truth table based to contain resolved  == rule result
+			- filter truth table to contain values for saved symbol results
+			- save valid values in cache, overwrite result values if they have smaller length than the ones in cache (multi rule)
+	- return the value in cache (remember to negate)
+
+			 
+
+
+resolve_for_rule -> int *results
+	- iterate the symbols in rules 
+		- resolve_for_symbol(curr_symbol) -> should return list of possible values for this symbol and save the result somewhere
+	- generate truth table
+	- resolve truth table
+	- filter truth table to contain values for saved symbol results
+	- return the remaining unfiltered results.
