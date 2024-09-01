@@ -1,5 +1,6 @@
 #include "rules.h"
 #include "ft_macros.h"
+#include "ft_map.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -291,18 +292,26 @@ int *resolve_truth_permutations(
 	return res;
 }
 
-int *resolve_for_symbol(Rulegraph *rg, char *symbol_str, char* facts)
+int *resolve_for_symbol(Rulegraph *rg, Symbol *symbol, char* facts, FtMap* cache)
 {
 	Rule **rules_to_resolve = (Rule **)calloc(MAX_VALUES, sizeof(Rule *)); // shh.. hard allocate here
 	int *res = (int*)malloc(MAX_VALUES * sizeof(int)); // shh.. hard allocate here
 	memset(res, -1, MAX_VALUES);
 
 	// check facts first
+	char *key = symbol->str_repr;
+	if (symbol->is_negated)
+ 	   key += 1;
 	if (strstr(facts, symbol_str))
 	{
 		printf("%s is found in facts\n", symbol_str);
 		res[0] = 1;
 	}
+
+	// check cache. If found, return here
+	int *cache_found = query_map(map, symbol);
+	if (cache_found)
+		return cache_found;
 
 	// search for all rules where rhs has symbol
 	locate_conditional_rule(rg, symbol_str, rules_to_resolve);
@@ -313,13 +322,80 @@ int *resolve_for_symbol(Rulegraph *rg, char *symbol_str, char* facts)
 		Rule *rule_to_resolve = rules_to_resolve[i];
 
 		// resolve that rule
+		int *curr_rule_res = resolve_for_rule(rule_to_resolve);
 		
-		// iterate through all possible results for that rule (or we make rule garentee return only 1 result)
+		// iterate through all possible results for that rule
+		int j = -1;
+		while (curr_rule_res[++j] != -1)
+		{
+			int curr_lhs_res = curr_rule_res[j];
+			int **symbols_res = (int**)calloc(MAX_VALUES, sizeof(int*)); // shh.. hard allocate here
+			int *inner_symbols_indices = (int *)malloc(MAX_VALUES * sizeof(int)); // shh.. hard allocate here
+			memset(inner_symbols_indices, -1, MAX_VALUES)
+			int inner_symbols_indices_idx = -1;
+
+			Symbol **rhs_symbols = 0;
+			if (rule_to_resolve->resolve_type == IMPLIES)
+				rhs_symbols = rule_to_resolve->implies->symbol_list;
+			else
+				rhs_symbols = rule_to_resolve->iff->symbol_list;
+			
+			// check if any inner symbols in rhs. If yes, handle them first
+			Symbol **inner_symbols = get_inner_symbols(rhs_symbols, inner_symbols_indices);
+			for (size_t k = 0; inner_symbols[k]; k++)
+			{
+				Symbol *curr_symbol_list = inner_symbols[k];
+				int *inner_res = resolve_for_inner(rg, curr_symbol_list, cache);
+				int idx_for_inner_symbol = inner_symbols_indices[k];
+
+				symbols_res[idx_for_inner_symbol] = inner_res;
+			}
+			
+
+			// iterate through rhs symbols
+				// call resolve_for_symbol() for current symbol and save them in symbols_res
+
+				// if current symbol is negated, apply negation on the results
+
+				// generate & resolve truth permutations
+
+
+			free(symbols_res);
+		}
+		
+
 
 		
 		printf("Rule found to resolving %s, %s\n", symbol_str, serialize_symbols(rule_to_resolve->symbol_list));
 	}
 	
 	free(rules_to_resolve);
+	return res;
+}
+
+int *resolve_for_rule(Rulegraph *rg, Rule* rule, FtMap* cache)
+{
+	return 0;
+}
+
+int *resolve_for_inner(Rulegraph *rg, Symbol* inner_symbols, FtMap *cache)
+{
+	return 0;
+}
+
+Symbol* get_inner_symbols(Symbol **list, int *indices) {
+	Symbol **res = (Symbol **)calloc(MAX_VALUES, sizeof(Symbol *));
+	int j = -1;
+	int k = -1;
+	for (size_t i = 0; list[i]; i++)
+	{
+		if (list[i]->type == INNER)
+		{
+			res[++j] = list[i];
+			indices[++k] = i;
+		}
+	}
+	
+
 	return res;
 }

@@ -127,6 +127,7 @@ int *query_map(FtMap *map, Symbol *symbol)
     
     res = (int *)malloc(VALUE_LIMIT * sizeof(int));
     memcpy(res, pair->results, VALUE_LIMIT * sizeof(int));
+    break;
   }
   return res;
 }

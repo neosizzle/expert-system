@@ -22,7 +22,7 @@ resolve_for_symbol -> int* results
 	- iterate list of rules
 		- call resolve_for_rule() on curr_rule, should return a list of results
 		- iterate through list of results
-			- check for any inner symbols. If yes, call handle_inner_symbols() and save result somewhere
+			- check for any inner symbols in rhs. If yes, call handle_inner_symbols() and save result somewhere
 			- iterate through rhs symbols
 				- call resolve_for_symbol() for curr_symbol and save them somewhere
 			- check for negation
