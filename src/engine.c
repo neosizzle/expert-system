@@ -2,6 +2,7 @@
 #include "ft_macros.h"
 #include "ft_map.h"
 #include "engine_utils.h"
+#include <math.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -120,11 +121,34 @@ int *resolve_for_symbol(Rulegraph *rg, Symbol *symbol, char* facts, FtMap* cache
 				rhs_symbols_res[k] = curr_symbol_res;
 			}
 			
-			// calculate dimensions of truth table
-			
+			// generate inputs for truth table
+			int num_elems = unique_symbols(rhs_symbols);
+			int total_rows = pow(2, num_elems);
+			int **table = (int **)calloc(total_rows, sizeof(int *));
+			for (size_t i = 0; i < total_rows; i++)
+				table[i] = (int *)calloc(num_elems, sizeof(int));
+			int* aux = (int *)calloc(num_elems, sizeof(int));
+			int curr_table_y = 0;
+			Symbol **mapping = generate_mapping_for_truth_table(rhs_symbols);
 
 			// generate & resolve truth permutations
+			generate_truth_permutations(
+				table,
+				num_elems,
+				&curr_table_y,
+				0,
+				aux
+			);
 
+			int *permutation_results = resolve_truth_permutations(
+				mapping,
+				table,
+				curr_table_y,
+				rhs_symbols
+			);
+
+
+			// TODO free all stuff here
 
 			free(rhs_symbols_res);
 		}

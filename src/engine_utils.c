@@ -5,7 +5,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-
 // solve a boolean equation value Operator value
 // expects both symbols to have define values
 int solve_bool_pair(int lhs, Symbol* operator, int rhs)
@@ -280,5 +279,110 @@ Symbol** get_inner_symbols(Symbol **list, int *indices)
 	}
 	
 
+	return res;
+}
+
+// self explanatory
+Symbol** generate_mapping_for_truth_table(Symbol **list)
+{
+	Symbol** res =  (Symbol **)calloc(MAX_VALUES, sizeof(Symbol *));
+
+	char **cache = (char **)calloc(MAX_VALUES, sizeof(char *));
+
+	// iterate the list of symbols
+	for (size_t i = 0; list[i] ; i++)
+	{
+		if (list[i]->type != VARIABLE && list[i]->type != FACT)
+			continue;
+		
+		char *key = list[i]->str_repr;	
+		int found_in_cache = 0;
+		int cache_idx = -1;
+
+		while (cache[++cache_idx])
+		{
+			// if the current cache item matches current list item, mark as found
+			if (!strcmp(list[i]->str_repr, cache[cache_idx]))
+			{
+				++found_in_cache;
+				break;
+			}
+		}
+
+		// not found, add in cache, append to res and continue`
+		if (!found_in_cache)
+		{
+			Symbol* new_symbol = (Symbol *)calloc(1, sizeof(Symbol));
+			memcpy(new_symbol, list[i], sizeof(Symbol));
+
+			if (cache_idx >= MAX_VALUES)
+			{
+				free_symbol(new_symbol);
+				DIE(1, "[unique_symbols] cache idx overflow")
+			}
+			cache[cache_idx] = new_symbol;
+		}
+
+	}
+	
+	// free cache
+	for (size_t i = 0; i < MAX_VALUES; i++)
+	{
+		if (cache[i])
+			free(cache[i]);
+	}
+	
+	free(cache);
+	return res;
+}
+
+// given a list of symbols, calculate the number of elemets needed for truth table
+int unique_symbols(Symbol **list)
+{
+	int res = 0;
+
+	char **cache = (char **)calloc(MAX_VALUES, sizeof(char *));
+
+	// iterate the list of symbols
+	for (size_t i = 0; list[i] ; i++)
+	{
+		if (list[i]->type != VARIABLE && list[i]->type != FACT)
+			continue;
+		
+		char *key = list[i]->str_repr;	
+		int found_in_cache = 0;
+		int cache_idx = -1;
+
+		while (cache[++cache_idx])
+		{
+			// if the current cache item matches current list item, mark as found
+			if (!strcmp(list[i]->str_repr, cache[cache_idx]))
+			{
+				++found_in_cache;
+				break;
+			}
+		}
+
+		// not found, add in cache, imcrement res and continue`
+		if (!found_in_cache)
+		{
+			++res;
+			if (cache_idx >= MAX_VALUES)
+			{
+				DIE(1, "[unique_symbols] cache idx overflow")
+			}
+			cache[cache_idx] = strdup(list[i]->str_repr);
+		}
+
+	}
+	
+	// free cache
+	for (size_t i = 0; i < MAX_VALUES; i++)
+	{
+		if (cache[i])
+			free(cache[i]);
+	}
+	
+	free(cache);
 	return res;
 }
