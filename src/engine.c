@@ -44,14 +44,29 @@ int *resolve_for_symbol(Rulegraph *rg, Symbol *symbol, char* facts, FtMap* cache
 	memset(res, -1, MAX_VALUES);
 
 	// check facts first
+	if (symbol->type == FACT)
+	{
+		printf("%s is found in facts\n", symbol->str_repr);
+		res[0] = 1;
+		if (symbol->is_negated)
+			res[0] = 0;
+		return res;
+	}
+	// char *symbol_key = symbol->str_repr;
+	// if (symbol->is_negated)
+ 	//    symbol_key += 1;
+	// if (strstr(facts, symbol_key))
+	// {
+	// 	printf("%s is found in facts\n", symbol_key);
+	// 	if (symbol->is_negated)
+	// 		res[0] = 0;
+	// 	res[0] = 1;
+	// 	// return res;
+	// }
+
 	char *symbol_key = symbol->str_repr;
 	if (symbol->is_negated)
- 	   symbol_key += 1;
-	if (strstr(facts, symbol_key))
-	{
-		printf("%s is found in facts\n", symbol_key);
-		res[0] = 1;
-	}
+		symbol_key += 1;
 
 	// check cache. If found, return here
 	int *cache_found = query_map(cache, symbol);
@@ -147,7 +162,17 @@ int *resolve_for_symbol(Rulegraph *rg, Symbol *symbol, char* facts, FtMap* cache
 				rhs_symbols
 			);
 
+			int *table_indices_to_keep = filter_tt_for_resolve_for_symbol(
+				table,
+				rhs_symbols_res,
+				rhs_symbols,
+				mapping,
+				permutation_results,
+				curr_lhs_res,
+				num_elems
+			);
 
+			
 			// TODO free all stuff here
 
 			free(rhs_symbols_res);

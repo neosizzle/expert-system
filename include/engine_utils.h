@@ -10,7 +10,12 @@ void generate_truth_permutations(
 	int curr_aux_x,
 	int *aux
 );
-
+int *resolve_truth_permutations(
+	Symbol** mapping,
+	int **table,
+	int table_row_count,
+	Symbol **symbols
+);
 Symbol** generate_mapping_for_truth_table(Symbol **list);
 int unique_symbols(Symbol **list);
 

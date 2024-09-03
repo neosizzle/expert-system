@@ -285,10 +285,11 @@ Symbol** get_inner_symbols(Symbol **list, int *indices)
 // self explanatory
 Symbol** generate_mapping_for_truth_table(Symbol **list)
 {
-	Symbol** res =  (Symbol **)calloc(MAX_VALUES, sizeof(Symbol *));
+	Symbol** res =  (Symbol **)calloc(MAX_VALUES, sizeof(Symbol *)); // shh.. hard allocate here
 
-	char **cache = (char **)calloc(MAX_VALUES, sizeof(char *));
+	char **cache = (char **)calloc(MAX_VALUES, sizeof(char *)); // shh.. hard allocate here
 
+	int res_idx = -1;
 	// iterate the list of symbols
 	for (size_t i = 0; list[i] ; i++)
 	{
@@ -320,7 +321,8 @@ Symbol** generate_mapping_for_truth_table(Symbol **list)
 				free_symbol(new_symbol);
 				DIE(1, "[unique_symbols] cache idx overflow")
 			}
-			cache[cache_idx] = new_symbol;
+			cache[cache_idx] = new_symbol->str_repr;
+			res[++res_idx] = new_symbol;
 		}
 
 	}
@@ -384,5 +386,80 @@ int unique_symbols(Symbol **list)
 	}
 	
 	free(cache);
+	return res;
+}
+
+// filters truth table for resolve_for_symbol, returns indices to keep
+int *filter_tt_for_resolve_for_symbol(
+	int **table,
+	int **rhs_symbols_res,
+	Symbol **rhs_symbols,
+	Symbol **mapping,
+	int *perm_results,
+	int lhs_res,
+	int num_elems
+)
+{
+	int* res =  (int *)malloc(MAX_VALUES * sizeof(int)); // shh.. hard allocate here
+	memset(res, -1, MAX_VALUES * sizeof(int));
+	int curr_idx = -1;
+	int res_idx = -1;
+
+	while (perm_results[++curr_idx] != -1)
+	{
+		int curr_result = perm_results[curr_idx];
+		int *curr_symbol_states = table[curr_idx];
+
+		// filter truth table based to contain resolved == rule result
+		if (curr_result != lhs_res)
+			continue;
+		
+		// filter truth table based to contain saved symbol results
+		// col by col
+		int *table_row = table[curr_idx];
+		int skip_flag = 0;
+		// iterate column of table
+		for (size_t curr_col = 0; curr_col < num_elems; curr_col++)
+		{
+			// get mapping entry
+			Symbol *to_map = mapping[curr_col];
+
+			// find index of symol in rhs_symbols
+			int actual_symbol_idx = -1;
+			while (rhs_symbols[++actual_symbol_idx])
+			{
+				if (!strcmp(rhs_symbols[actual_symbol_idx]->str_repr, to_map->str_repr))
+					break;
+			}
+			
+			// after get index, obtain result list of that symbol
+			int *actual_symbol_results = rhs_symbols_res[actual_symbol_idx];
+
+			// check if column value is in result list and initialize found flag
+			int found_flag = 0;
+			int res_to_check = table_row[curr_col];
+			for (size_t i = 0; actual_symbol_results[i] != -1; i++)
+			{
+				if (actual_symbol_results[i] == res_to_check)
+					++found_flag;
+			}
+			
+			// if no found_flag, set skip flag and break
+			if (!found_flag)
+			{
+				++skip_flag;
+				break;
+			}
+		}
+
+		// check skip flag. If yes, continue
+		if (skip_flag)
+			continue;
+		
+		// if no, add curr_idx to res[++res_idx];
+		res[++res_idx] = curr_idx;
+	}
+	
+	
 	return res;
 }
