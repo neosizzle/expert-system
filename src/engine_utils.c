@@ -213,7 +213,7 @@ int *resolve_truth_permutations(
 	}
 	
 	int *res = (int *)calloc(table_row_count, sizeof(int));
-
+	int res_idx = -1;
 	for (size_t table_idx = 0; table_idx < table_row_count; table_idx++)
 	{
 		int *table_row = table[table_idx];
@@ -254,7 +254,8 @@ int *resolve_truth_permutations(
 		// walk through the symbols and select them to generate the result for that combination
 		Symbol **operators_copy = (Symbol **)calloc(MAX_VALUES, sizeof(Symbol *)); // shh.. hardallocate here
 		memcpy(operators_copy, operators, MAX_VALUES * sizeof(Symbol *));
-		printf("res is %d\n", triple_take_premutation_resolve(values, operators_copy));
+		res[++res_idx] = triple_take_premutation_resolve(values, operators_copy);
+		// printf("res is %d\n", triple_take_premutation_resolve(values, operators_copy));
 		
 	}
 
@@ -462,4 +463,51 @@ int *filter_tt_for_resolve_for_symbol(
 	
 	
 	return res;
+}
+
+// Apply filters and free anything that got discarded
+void apply_filters(
+	int **table,
+	int *perm_results,
+	int *indices_to_keep,
+	int number_of_rows
+)
+{
+	// create new table and perm results
+	int **new_table = (int **)calloc(MAX_VALUES, sizeof(int *));
+	int *new_perm_results = (int *)malloc(MAX_VALUES * sizeof(int));
+	memset(new_perm_results, -1, MAX_VALUES * sizeof(int));
+	int perm_result_idx = -1;
+	int table_idx = -1;
+	
+	// iterate through indices to keep and copy original kept data into tabes but free removed items in table
+	for (size_t i = 0; indices_to_keep[i] != -1; i++)
+	{
+		int *table_row = table[indices_to_keep[i]];
+		int perm_result = perm_results[indices_to_keep[i]];
+		new_perm_results[++perm_result_idx] = perm_result;
+		new_table[++table_idx] = table_row;
+	}
+
+	// apply filter to table
+	for (size_t i = 0; i < number_of_rows; i++)
+	{
+		int found_in_keep = 0;
+		for (size_t j = 0; indices_to_keep[j] != -1; j++)
+		{
+			if (i == indices_to_keep[j])
+				found_in_keep = 1;
+		}
+		if (!found_in_keep)
+			free(table[i]);
+		table[i] = 0;
+	}
+	for (size_t i = 0; new_table[i]; i++)
+		table[i] = new_table[i];
+	
+	// apply filter to perm results
+	for (size_t i = 0; i < number_of_rows; i++)
+		perm_results[i] = -1;
+	for (size_t i = 0; new_perm_results[i] != -1; i++)
+		perm_results[i] = new_perm_results[i];
 }
