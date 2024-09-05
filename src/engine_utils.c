@@ -175,7 +175,7 @@ static int triple_take_premutation_resolve(
 // Symbol *mapping[4] = {s1, s3, s5, 0};
 // Symbol *symbols[8] = {s1, s2, s3, s4, s5, s6, s7, 0};
 
-// resolve_truth_permutations(
+// int *truths_perms = resolve_truth_permutations(
 // 	mapping,
 // 	table,
 // 	curr_table_y,
@@ -220,7 +220,8 @@ int *resolve_truth_permutations(
 		operators[++operator_idx] = symbol;
 	}
 	
-	int *res = (int *)calloc(table_row_count, sizeof(int));
+	int *res = (int *)malloc(MAX_VALUES * sizeof(int));
+	memset(res, -1, MAX_VALUES * sizeof(int));
 	int res_idx = -1;
 	for (size_t table_idx = 0; table_idx < table_row_count; table_idx++)
 	{
@@ -398,6 +399,35 @@ int unique_symbols(Symbol **list)
 	return res;
 }
 
+// #include "engine_utils.h"
+// int res1[3] = {1, 0, -1};
+// int res2[3] = {1, 0, -1};
+// int res3[2] = {0, -1};
+// int res4[2] = {0, -1};
+
+// int *rhs_symbols_res[5] = {res1, res2, res3, res4, 0};
+// int *indices_to_keep = filter_tt_for_resolve_for_symbol(
+// 	table,
+// 	rhs_symbols_res,
+// 	symbols,
+// 	mapping,
+// 	perm_results,
+// 	1,
+// 	num_elems
+// );
+
+// printf("map==========\n");
+// for (size_t i = 0; i < total_rows; i++)
+// {
+// 	for (size_t j = 0; j < num_elems; j++)
+// 		printf("%d ", table[i][j]);
+// 	printf(" = %d\n", perm_results[i]);
+// }
+
+// for (size_t i = 0; indices_to_keep[i] != -1; i++)
+// {
+// 	printf("keeping idx %d\n", indices_to_keep[i]);
+// }
 // filters truth table for resolve_for_symbol, returns indices to keep
 int *filter_tt_for_resolve_for_symbol(
 	int **table,
@@ -435,14 +465,19 @@ int *filter_tt_for_resolve_for_symbol(
 
 			// find index of symol in rhs_symbols
 			int actual_symbol_idx = -1;
+			int actual_symbol_idx_offset = 0;
 			while (rhs_symbols[++actual_symbol_idx])
 			{
-				if (!strcmp(rhs_symbols[actual_symbol_idx]->str_repr, to_map->str_repr))
+				Symbol* symbol = rhs_symbols[actual_symbol_idx];
+
+				if (symbol->type != VARIABLE && symbol->type != INNER && symbol->type != FACT)
+					++actual_symbol_idx_offset;
+				if (!strcmp(symbol->str_repr, to_map->str_repr))
 					break;
 			}
 			
 			// after get index, obtain result list of that symbol
-			int *actual_symbol_results = rhs_symbols_res[actual_symbol_idx];
+			int *actual_symbol_results = rhs_symbols_res[actual_symbol_idx - actual_symbol_idx_offset];
 
 			// check if column value is in result list and initialize found flag
 			int found_flag = 0;
@@ -468,7 +503,6 @@ int *filter_tt_for_resolve_for_symbol(
 		// if no, add curr_idx to res[++res_idx];
 		res[++res_idx] = curr_idx;
 	}
-	
 	
 	return res;
 }

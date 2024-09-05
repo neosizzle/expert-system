@@ -168,6 +168,7 @@ int *resolve_for_symbol(Rulegraph *rg, Symbol *symbol, char* facts, FtMap* cache
 			);
 
 			// filter the truth table to only extract relevant rules
+			// to do make it so that it intellegently knows to filter implicatiom false
 			int *table_indices_to_keep = filter_tt_for_resolve_for_symbol(
 				table,
 				rhs_symbols_res,
