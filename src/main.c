@@ -289,6 +289,7 @@ int main(int argc, char *argv[])
 	print_rulegraph(rule_graph);
 
 	// TODO run expert system with said rules and query
+	// TODO test int *filter_tt_for_resolve_for_symbol
 	resolve_for_symbol(rule_graph, "C", facts_list);
 
 	// busy spin

@@ -2,8 +2,16 @@
 #include "ft_macros.h"
 #include "ft_map.h"
 #include "engine_utils.h"
+
 #include <string.h>
 #include <stdlib.h>
+
+int list_len_neg_1(int *list)
+{
+	int res = -1;
+	while (list[++res] != -1){}
+	return res;
+}
 
 // solve a boolean equation value Operator value
 // expects both symbols to have define values
@@ -510,4 +518,47 @@ void apply_filters(
 		perm_results[i] = -1;
 	for (size_t i = 0; new_perm_results[i] != -1; i++)
 		perm_results[i] = new_perm_results[i];
+}
+
+// function that record mapping symbols to cache
+// will only overwrite cache entry if cache value is longer than new value
+// does negation converison here
+void store_results_in_cache(
+	Symbol **mapping,
+	int **table,
+	FtMap* cache
+) {
+	int aux[MAX_VALUES] = {-1}; // hard allocate
+
+	for (size_t symbol_idx = 0; mapping[symbol_idx]; symbol_idx++)
+	{
+		Symbol *symbol_to_cache = mapping[symbol_idx];
+		for (size_t table_idx = 0; table[table_idx]; table_idx++)
+		{
+			int *results_to_cache = table[table_idx];
+			aux[table_idx] = results_to_cache[symbol_idx];
+		}
+
+		// our aux should be filled with values for current symbol. Do negation thing
+		if (symbol_to_cache->is_negated)
+		{
+			for (size_t i = 0; aux[i] != -1; i++)
+				aux[i] = !aux[i];
+		}
+
+		// get cache value to compare length
+		int *cache_found = query_map(cache, symbol_to_cache);
+		if (cache_found)
+		{
+			int cache_len = list_len_neg_1(cache_found);
+			int my_len = list_len_neg_1(aux);
+			if (my_len < cache_len)
+				insert_map(cache, symbol_to_cache, aux, my_len);
+			free(cache_found);
+		}
+
+		// reset aux
+		memset(aux, -1, MAX_VALUES * sizeof(int));
+	}
+	
 }

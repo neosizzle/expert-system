@@ -46,6 +46,7 @@ int *resolve_for_symbol(Rulegraph *rg, Symbol *symbol, char* facts, FtMap* cache
 	// check facts first
 	if (symbol->type == FACT)
 	{
+		free(rules_to_resolve);
 		printf("%s is found in facts\n", symbol->str_repr);
 		res[0] = 1;
 		if (symbol->is_negated)
@@ -71,7 +72,11 @@ int *resolve_for_symbol(Rulegraph *rg, Symbol *symbol, char* facts, FtMap* cache
 	// check cache. If found, return here
 	int *cache_found = query_map(cache, symbol);
 	if (cache_found)
+	{
+		free(rules_to_resolve);
+		free(res);
 		return cache_found;
+	}
 
 	// search for all rules where rhs has symbol
 	locate_conditional_rule(rg, symbol_key, rules_to_resolve);
@@ -162,6 +167,7 @@ int *resolve_for_symbol(Rulegraph *rg, Symbol *symbol, char* facts, FtMap* cache
 				rhs_symbols
 			);
 
+			// filter the truth table to only extract relevant rules
 			int *table_indices_to_keep = filter_tt_for_resolve_for_symbol(
 				table,
 				rhs_symbols_res,
@@ -172,18 +178,42 @@ int *resolve_for_symbol(Rulegraph *rg, Symbol *symbol, char* facts, FtMap* cache
 				num_elems
 			);
 
+			apply_filters(
+				table,
+				permutation_results,
+				table_indices_to_keep,
+				total_rows
+			);
 			
+			// store results of compputation in cache
+			store_results_in_cache(
+				mapping,
+				table,
+				cache
+			);
+
 			// TODO free all stuff here
 
 			free(rhs_symbols_res);
 		}
 
-		
-		printf("Rule found to resolving %s, %s\n", symbol->str_repr, serialize_symbols(rule_to_resolve->symbol_list));
 	}
 	
-	free(rules_to_resolve);
-	return res;
+	// if we get no rules to resolve, means it is false by default
+	if (!rules_to_resolve[0])
+		res[0] = 0;
+
+	// get cache and copy and return
+	cache_found = query_map(cache, symbol);
+	if (cache_found)
+	{
+		int len = list_len_neg_1(cache_found);
+		memcpy(res, cache_found, len * sizeof(int));
+		free(rules_to_resolve);
+		free(cache_found);
+		return res;
+	}
+	DIE(1, "[resolve_for_symbol] We did all that but cache is still empty")
 }
 
 int *resolve_for_rule(Rulegraph *rg, Rule* rule, FtMap* cache)

@@ -34,4 +34,12 @@ void apply_filters(
 	int *indices_to_keep,
 	int number_of_rows
 );
+
+void store_results_in_cache(
+	Symbol **mapping,
+	int **table,
+	FtMap* cache
+);
+
+int list_len_neg_1(int *list);
 #endif  //!__ENGINE_UTILS__H__
