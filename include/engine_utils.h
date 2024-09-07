@@ -25,6 +25,16 @@ int *filter_tt_for_resolve_for_symbol(
 	Symbol **mapping,
 	int *perm_results,
 	int lhs_res,
+	int num_elems,
+	ResolveType resolve_type
+);
+
+int *filter_tt_for_resolve_for_rule(
+	int **table,
+	int **rhs_symbols_res,
+	Symbol **rhs_symbols,
+	Symbol **mapping,
+	int *perm_results,
 	int num_elems
 );
 
@@ -42,4 +52,5 @@ void store_results_in_cache(
 );
 
 int list_len_neg_1(int *list);
+void print_list_endl(int *list);
 #endif  //!__ENGINE_UTILS__H__

@@ -289,73 +289,7 @@ int main(int argc, char *argv[])
 	print_rulegraph(rule_graph);
 
 	// TODO run expert system with said rules and query
-	// TODO test int *filter_tt_for_resolve_for_symbol
 	// resolve_for_symbol(rule_graph, "C", facts_list);
-
-	int num_elems = 3;
-	int total_rows = pow(2, num_elems);
-	int **table = (int **)calloc(total_rows, sizeof(int *));
-	for (size_t i = 0; i < total_rows; i++)
-		table[i] = (int *)calloc(num_elems, sizeof(int));
-	int* aux = (int *)calloc(num_elems, sizeof(int));
-	int curr_table_y = 0;
-
-	generate_truth_permutations(
-		table,
-		num_elems,
-		&curr_table_y,
-		0,
-		aux
-	);
-
-	Symbol *s1 = generate_symbol_from("A", 0, 0);
-	Symbol *s2 = generate_symbol_from("+", 0, 0);
-	Symbol *s3 = generate_symbol_from("B", 0, 0);
-	Symbol *s4 = generate_symbol_from("|", 0, 0);
-	Symbol *s5 = generate_symbol_from("C", 0, 0);
-	Symbol *s6 = generate_symbol_from("+", 0, 0);
-	Symbol *s7 = generate_symbol_from("C", 0, 0);
-
-	Symbol *mapping[4] = {s1, s3, s5, 0};
-	Symbol *symbols[8] = {s1, s2, s3, s4, s5, s6, s7, 0};
-
-	int *perm_results = resolve_truth_permutations(
-		mapping,
-		table,
-		curr_table_y,
-		symbols
-	);
-
-
-	#include "engine_utils.h"
-	int res1[3] = {1, 0, -1};
-	int res2[3] = {1, 0, -1};
-	int res3[2] = {0, -1};
-	int res4[2] = {0, -1};
-
-	int *rhs_symbols_res[5] = {res1, res2, res3, res4, 0};
-	int *indices_to_keep = filter_tt_for_resolve_for_symbol(
-		table,
-		rhs_symbols_res,
-		symbols,
-		mapping,
-		perm_results,
-		1,
-		num_elems
-	);
-
-	printf("map==========\n");
-	for (size_t i = 0; i < total_rows; i++)
-	{
-		for (size_t j = 0; j < num_elems; j++)
-			printf("%d ", table[i][j]);
-		printf(" = %d\n", perm_results[i]);
-	}
-
-	for (size_t i = 0; indices_to_keep[i] != -1; i++)
-	{
-		printf(" keeping idx %d\n", indices_to_keep[i]);
-	}
 	
 	// busy spin
 	while (1)

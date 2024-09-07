@@ -13,6 +13,16 @@ int list_len_neg_1(int *list)
 	return res;
 }
 
+void print_list_endl(int *list)
+{
+	int i = -1;
+	printf("[");
+	while (list[++i] != -1){
+		printf("%d, ", list[i]);
+	}
+	printf("]\n");
+}
+
 // solve a boolean equation value Operator value
 // expects both symbols to have define values
 int solve_bool_pair(int lhs, Symbol* operator, int rhs)
@@ -413,7 +423,8 @@ int unique_symbols(Symbol **list)
 // 	mapping,
 // 	perm_results,
 // 	1,
-// 	num_elems
+// 	num_elems,
+//	IFF
 // );
 
 // printf("map==========\n");
@@ -436,7 +447,8 @@ int *filter_tt_for_resolve_for_symbol(
 	Symbol **mapping,
 	int *perm_results,
 	int lhs_res,
-	int num_elems
+	int num_elems,
+	ResolveType resolve_type
 )
 {
 	int* res =  (int *)malloc(MAX_VALUES * sizeof(int)); // shh.. hard allocate here
@@ -450,8 +462,93 @@ int *filter_tt_for_resolve_for_symbol(
 		int *curr_symbol_states = table[curr_idx];
 
 		// filter truth table based to contain resolved == rule result
-		if (curr_result != lhs_res)
+		// filter truth table based on implication rule
+		if (resolve_type == IMPLIES)
+		{
+			if (lhs_res == 1 && curr_result == 0)
+				continue;
+		}
+		else if (resolve_type == IFF)
+		{
+			if (curr_result != lhs_res)
+				continue;
+		}
+		else {
+			DIE(1, "[filter_tt_for_resolve_for_symbol] No resolve type here apparently :/\n")
+		}
+		
+		// filter truth table based to contain saved symbol results
+		// col by col
+		int *table_row = table[curr_idx];
+		int skip_flag = 0;
+		// iterate column of table
+		for (size_t curr_col = 0; curr_col < num_elems; curr_col++)
+		{
+			// get mapping entry
+			Symbol *to_map = mapping[curr_col];
+
+			// find index of symol in rhs_symbols
+			int actual_symbol_idx = -1;
+			int actual_symbol_idx_offset = 0;
+			while (rhs_symbols[++actual_symbol_idx])
+			{
+				Symbol* symbol = rhs_symbols[actual_symbol_idx];
+
+				if (symbol->type != VARIABLE && symbol->type != INNER && symbol->type != FACT)
+					++actual_symbol_idx_offset;
+				if (!strcmp(symbol->str_repr, to_map->str_repr))
+					break;
+			}
+			
+			// after get index, obtain result list of that symbol
+			int *actual_symbol_results = rhs_symbols_res[actual_symbol_idx - actual_symbol_idx_offset];
+
+			// check if column value is in result list and initialize found flag
+			int found_flag = 0;
+			int res_to_check = table_row[curr_col];
+			for (size_t i = 0; actual_symbol_results[i] != -1; i++)
+			{
+				if (actual_symbol_results[i] == res_to_check)
+					++found_flag;
+			}
+			
+			// if no found_flag, set skip flag and break
+			if (!found_flag)
+			{
+				++skip_flag;
+				break;
+			}
+		}
+
+		// check skip flag. If yes, continue
+		if (skip_flag)
 			continue;
+		
+		// if no, add curr_idx to res[++res_idx];
+		res[++res_idx] = curr_idx;
+	}
+	
+	return res;
+}
+
+int *filter_tt_for_resolve_for_rule(
+	int **table,
+	int **rhs_symbols_res,
+	Symbol **rhs_symbols,
+	Symbol **mapping,
+	int *perm_results,
+	int num_elems
+)
+{
+	int* res =  (int *)malloc(MAX_VALUES * sizeof(int)); // shh.. hard allocate here
+	memset(res, -1, MAX_VALUES * sizeof(int));
+	int curr_idx = -1;
+	int res_idx = -1;
+
+	while (perm_results[++curr_idx] != -1)
+	{
+		int curr_result = perm_results[curr_idx];
+		int *curr_symbol_states = table[curr_idx];
 		
 		// filter truth table based to contain saved symbol results
 		// col by col
