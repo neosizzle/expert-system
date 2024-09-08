@@ -88,8 +88,8 @@ void insert_map(FtMap *map, Symbol *symbol, int *results, int result_len)
   }
   int found_results = query_map_idx(map, symbol);
   int *new_values = (int *)malloc(VALUE_LIMIT * sizeof(int));
-  memset(new_values, -1, VALUE_LIMIT);
-  memcpy(new_values, results, result_len * sizeof(int));
+  // memset(new_values, -1, VALUE_LIMIT);
+  memcpy(new_values, results, VALUE_LIMIT * sizeof(int));
   if (found_results != -1)
   {
     free(map->nodes[found_results]->results);
@@ -106,8 +106,6 @@ void insert_map(FtMap *map, Symbol *symbol, int *results, int result_len)
     map->nodes[map->len] = new_node;
     map->len += 1;
   }
-
- 
 }
 
 

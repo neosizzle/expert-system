@@ -23,6 +23,40 @@ void print_list_endl(int *list)
 	printf("]\n");
 }
 
+void add_ignore_list(Rule **list, Rule *rule)
+{
+	int i = -1;
+	while (list[++i]){}
+	list[i] = rule;
+}
+
+void remove_ignore_list(Rule **list, Rule *rule)
+{
+	char *rule_str = serialize_symbols(rule->symbol_list);
+	printf("[remove_ignore_list] removing %s\n", rule_str);
+	int i = -1;
+	while (list[++i])
+	{
+		if (list[i] == rule)
+			break;
+	}
+	
+	list[i] = 0;
+	// NOTE: assume no double clear, list always have symbol_key
+	while (list[i])
+	{
+		Rule *next_elem = list[i + i];
+		list[i] = next_elem;
+		++i;
+	}
+	
+	i = -1;
+	while (list[++i])
+	{
+		printf("[remove_key_heap] keyheap is now %p\n", list[i]);
+	}
+}
+
 // solve a boolean equation value Operator value
 // expects both symbols to have define values
 int solve_bool_pair(int lhs, Symbol* operator, int rhs)
@@ -341,7 +375,7 @@ Symbol** generate_mapping_for_truth_table(Symbol **list)
 				free_symbol(new_symbol);
 				DIE(1, "[unique_symbols] cache idx overflow")
 			}
-			cache[cache_idx] = new_symbol->str_repr;
+			cache[cache_idx] = strdup(new_symbol->str_repr);
 			res[++res_idx] = new_symbol;
 		}
 
@@ -448,7 +482,8 @@ int *filter_tt_for_resolve_for_symbol(
 	int *perm_results,
 	int lhs_res,
 	int num_elems,
-	ResolveType resolve_type
+	ResolveType resolve_type,
+	int rule_enforce
 )
 {
 	int* res =  (int *)malloc(MAX_VALUES * sizeof(int)); // shh.. hard allocate here
@@ -487,7 +522,7 @@ int *filter_tt_for_resolve_for_symbol(
 			// get mapping entry
 			Symbol *to_map = mapping[curr_col];
 
-			// find index of symol in rhs_symbols
+			// find index of symbol in rhs_symbols
 			int actual_symbol_idx = -1;
 			int actual_symbol_idx_offset = 0;
 			while (rhs_symbols[++actual_symbol_idx])
@@ -501,7 +536,11 @@ int *filter_tt_for_resolve_for_symbol(
 			}
 			
 			// after get index, obtain result list of that symbol
-			int *actual_symbol_results = rhs_symbols_res[actual_symbol_idx - actual_symbol_idx_offset];
+			int *actual_symbol_results = rhs_symbols_res[actual_symbol_idx]; // dont need offset or else read null memory?
+			// for (size_t i = 0; i < MAX_VALUES && actual_symbol_results[i] != -1; i++)
+			// {
+			// 	printf("[fttforsymbol] [%d] %d\n", i, actual_symbol_results[i]);
+			// }
 
 			// check if column value is in result list and initialize found flag
 			int found_flag = 0;
@@ -515,6 +554,11 @@ int *filter_tt_for_resolve_for_symbol(
 			// if no found_flag, set skip flag and break
 			if (!found_flag)
 			{
+				// only append skip flag if we dont want rule enforce to override decision
+				if (rule_enforce)
+				{
+					continue;
+				}
 				++skip_flag;
 				break;
 			}
@@ -560,12 +604,16 @@ int *filter_tt_for_resolve_for_rule(
 			// get mapping entry
 			Symbol *to_map = mapping[curr_col];
 
-			// find index of symol in rhs_symbols
+			// printf("[filter_tt_for_resolve_for_rule] to_map %s\n", to_map->str_repr);
+
+			// find index of symbol in rhs_symbols
 			int actual_symbol_idx = -1;
 			int actual_symbol_idx_offset = 0;
 			while (rhs_symbols[++actual_symbol_idx])
 			{
 				Symbol* symbol = rhs_symbols[actual_symbol_idx];
+
+				// printf("[filter_tt_for_resolve_for_rule] symbol->str_repr %s\n", symbol->str_repr);
 
 				if (symbol->type != VARIABLE && symbol->type != INNER && symbol->type != FACT)
 					++actual_symbol_idx_offset;
@@ -574,7 +622,8 @@ int *filter_tt_for_resolve_for_rule(
 			}
 			
 			// after get index, obtain result list of that symbol
-			int *actual_symbol_results = rhs_symbols_res[actual_symbol_idx - actual_symbol_idx_offset];
+			int *actual_symbol_results = rhs_symbols_res[actual_symbol_idx];
+			// printf("[filter_tt_for_resolve_for_rule] actual_symbol_results %p, idx %d\n", actual_symbol_results, actual_symbol_idx - actual_symbol_idx_offset);
 
 			// check if column value is in result list and initialize found flag
 			int found_flag = 0;
@@ -659,7 +708,8 @@ void store_results_in_cache(
 	int **table,
 	FtMap* cache
 ) {
-	int aux[MAX_VALUES] = {-1}; // hard allocate
+	int aux[MAX_VALUES]; // hard allocate
+	memset(aux, -1, sizeof(int) * MAX_VALUES);
 
 	for (size_t symbol_idx = 0; mapping[symbol_idx]; symbol_idx++)
 	{
@@ -681,13 +731,23 @@ void store_results_in_cache(
 		int *cache_found = query_map(cache, symbol_to_cache);
 		if (cache_found)
 		{
+			// printf("cache_found[0] %d\n", cache_found[5]);
 			int cache_len = list_len_neg_1(cache_found);
 			int my_len = list_len_neg_1(aux);
 			if (my_len < cache_len)
 				insert_map(cache, symbol_to_cache, aux, my_len);
 			free(cache_found);
 		}
-
+		else
+		{
+			// printf("new entry to cahce %s \n", symbol_to_cache->str_repr);
+			// for (size_t i = 0; i < MAX_VALUES; i++)
+			// {
+			// 	printf("new aux[%d] %d\n", i, aux[i]);
+			// }
+			
+			insert_map(cache, symbol_to_cache, aux, MAX_VALUES); // NOTE: hardcoded length here
+		}
 		// reset aux
 		memset(aux, -1, MAX_VALUES * sizeof(int));
 	}

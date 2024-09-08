@@ -288,7 +288,14 @@ int main(int argc, char *argv[])
 	update_rule_graph_with_facts(rule_graph, facts_list);
 	print_rulegraph(rule_graph);
 
+	// init cache
+	FtMap *cache = ft_map_new(69);
+
 	// TODO run expert system with said rules and query
+	char *symbol_str = "C";
+	Symbol *s1 = generate_symbol_from(symbol_str, 0, 0);
+	Rule **ignore_list = calloc(1024, sizeof(Rule *));
+	int *res = resolve_for_symbol(rule_graph, s1, facts_list, cache, symbol_str, ignore_list);
 	// resolve_for_symbol(rule_graph, "C", facts_list);
 	
 	// busy spin

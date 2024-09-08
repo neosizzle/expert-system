@@ -12,6 +12,6 @@ A + B => C + D
 # 	Rule A + B is true
 # LHS is false, implies rule C + D can be false or true
 # What is D?
-#	false by fact
-# Possible values of C = [false]
-# [false] by deduction
+#	possible valeus of D = [true, false]
+# Possible values of C = [false, true]
+# [false, true] by deduction

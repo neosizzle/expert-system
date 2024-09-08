@@ -6,12 +6,12 @@
 #include <string.h>
 #include <stdlib.h>
 
-int *resolve_for_rule(Rulegraph *rg, Rule* rule, char* facts, FtMap* cache);
+int *resolve_for_rule(Rulegraph *rg, Rule* rule, char* facts, FtMap* cache, char *original_key, Rule **rule_ignore_list);
 Symbol** get_inner_symbols(Symbol **list, int *indices);
 int *resolve_for_inner(Rulegraph *rg, Symbol* inner_symbols, FtMap *cache);
 
 // given a symbol, look for rules which implies / iffs that symbol and writes to res
-void locate_conditional_rule(Rulegraph *rg, char *input_symbol, Rule **res)
+void locate_conditional_rule(Rulegraph *rg, char *input_symbol, Rule **res, Rule **ignore_list)
 {
 	Rule **rules = rg->all_rules_vertices;
 
@@ -21,6 +21,17 @@ void locate_conditional_rule(Rulegraph *rg, char *input_symbol, Rule **res)
 	{
 		Rule *rule = rules[i];
 		Rule *rule_cmp = NULL;
+
+		// check ignore list
+		int ignore = 0;
+		for (size_t j = 0; ignore_list[j]; j++)
+		{
+			if (ignore_list[j] == rule)
+				ignore = 1;
+		}
+		if (ignore)
+			continue;
+
 		if (rules[i]->implies)
 			rule_cmp = rule->implies;
 		else
@@ -37,9 +48,16 @@ void locate_conditional_rule(Rulegraph *rg, char *input_symbol, Rule **res)
 	}
 }
 
-int *resolve_for_symbol(Rulegraph *rg, Symbol *symbol, char* facts, FtMap* cache)
+int *resolve_for_symbol(
+	Rulegraph *rg,
+	Symbol *symbol,
+	char* facts, 
+	FtMap* cache,
+	char *original_key,
+	Rule **rule_ignore_list
+	)
 {
-	printf("[resolve_for_symbol] Entry for %s\n", symbol->str_repr);
+	printf("[resolve_for_symbol] [%s] Entry for %s\n",symbol->str_repr, symbol->str_repr);
 
 	Rule **rules_to_resolve = (Rule **)calloc(MAX_VALUES, sizeof(Rule *)); // shh.. hard allocate here
 	int *res = (int*)malloc(MAX_VALUES * sizeof(int)); // shh.. hard allocate here
@@ -49,7 +67,7 @@ int *resolve_for_symbol(Rulegraph *rg, Symbol *symbol, char* facts, FtMap* cache
 	if (symbol->type == FACT)
 	{
 		free(rules_to_resolve);
-		printf("[resolve_for_symbol] %s is found in facts, is_negated? %d\n", symbol->str_repr, symbol->is_negated);
+		printf("[resolve_for_symbol] [%s] %s is found in facts, is_negated? %d\n", symbol->str_repr, symbol->str_repr, symbol->is_negated);
 		res[0] = 1;
 		if (symbol->is_negated)
 			res[0] = 0;
@@ -71,45 +89,67 @@ int *resolve_for_symbol(Rulegraph *rg, Symbol *symbol, char* facts, FtMap* cache
 	if (symbol->is_negated)
 		symbol_key += 1;
 
+	// if we already have some ignoring rules and our symbol_key is the same as original key,
+	// we return a predefined [0,1] amgiguity
+	if (rule_ignore_list[0] != 0 && !strcmp(symbol_key, original_key))
+	{
+		printf("[resolve_for_symbol] [%s] %s reentry, resolving to [0, 1]\n", symbol_key, symbol->str_repr);
+		int *curr_symbol_res = (int *)malloc(3 * sizeof(int));
+		curr_symbol_res[0] = 0;
+		curr_symbol_res[1] = 1;
+		curr_symbol_res[2] = -1;
+		return curr_symbol_res; 
+	}
+
 	// check cache. If found, return here
 	int *cache_found = query_map(cache, symbol);
 	if (cache_found)
 	{
-		printf("[resolve_for_symbol] %s found in cache: ", symbol->str_repr);
+		printf("[resolve_for_symbol] [%s] %s found in cache @ %p: ", symbol_key, symbol->str_repr, cache_found);
+		
 		print_list_endl(cache_found);
 		free(rules_to_resolve);
 		free(res);
+		
 		return cache_found;
 	}
 
 	// search for all rules where rhs has symbol
-	locate_conditional_rule(rg, symbol_key, rules_to_resolve);
-
+	locate_conditional_rule(rg, symbol_key, rules_to_resolve, rule_ignore_list);
 	// iterate through all results
 	for (size_t i = 0; rules_to_resolve[i]; i++)
 	{
 		Rule *rule_to_resolve = rules_to_resolve[i];
 		char *rule_str = serialize_symbols(rule_to_resolve->symbol_list);
 
-		printf("[resolve_for_symbol] resolving rule %s\n", rule_str);
+		// add rule to ignore list before resolving
+		add_ignore_list(rule_ignore_list, rule_to_resolve);	
+
 		// resolve that rule
-		int *curr_rule_res = resolve_for_rule(rg, rule_to_resolve, facts, cache);
-		printf("[resolve_for_symbol] rule %s resolved to: ", rule_str);
+		printf("[resolve_for_symbol] [%s] resolving rule %s\n", symbol_key, rule_str);
+		int *curr_rule_res = resolve_for_rule(rg, rule_to_resolve, facts, cache, original_key, rule_ignore_list);
+		printf("[resolve_for_symbol] [%s] rule %s resolved to: ", symbol_key, rule_str);
 		print_list_endl(curr_rule_res);
 
 
 		// iterate through all possible results for that rule
 		int j = -1;
+		// just a marker here to tell the filter below wether or not
+		// the current LHS has results will yield more than 1 result
+		int lhs_rule_enforce = 1;
+		if (list_len_neg_1(curr_rule_res) != 1)
+			lhs_rule_enforce = 0;
+		if (list_len_neg_1(curr_rule_res) == 1 && curr_rule_res[0] == 0 && rule_to_resolve->resolve_type == IMPLIES)
+			lhs_rule_enforce = 0;
 		while (curr_rule_res[++j] != -1)
 		{
-
 			int curr_lhs_res = curr_rule_res[j];
 			int **rhs_symbols_res = (int**)calloc(MAX_VALUES, sizeof(int*)); // shh.. hard allocate here
 			int *inner_symbols_indices = (int *)malloc(MAX_VALUES * sizeof(int)); // shh.. hard allocate here
 			memset(inner_symbols_indices, -1, MAX_VALUES);
 			int inner_symbols_indices_idx = -1;
 			
-			printf("[resolve_for_symbol] if rule %s is %d: ", rule_str, curr_lhs_res);
+			printf("[resolve_for_symbol] [%s] resolving RHS if rule %s is %d\n", symbol_key, rule_str, curr_lhs_res);
 
 			Symbol **rhs_symbols = 0;
 			if (rule_to_resolve->resolve_type == IMPLIES)
@@ -133,14 +173,15 @@ int *resolve_for_symbol(Rulegraph *rg, Symbol *symbol, char* facts, FtMap* cache
 			{
 				Symbol *curr_rhs_symbol = rhs_symbols[k];
 				
-				if (curr_rhs_symbol->type == INNER)
+				if (curr_rhs_symbol->type == INNER || curr_rhs_symbol->type == OPERATOR)
 					continue;
 				
 				// call resolve_for_symbol() for current symbol and save them in rhs_symbols_res
-				printf("[resolve_for_symbol] resolving RHS symbol %s: ", curr_rhs_symbol->str_repr);
-				int *curr_symbol_res = resolve_for_symbol(rg, curr_rhs_symbol, facts, cache);
-				printf("[resolve_for_symbol] RHS symbol %s resolved to: ", curr_rhs_symbol->str_repr);
-				print_list_endl(curr_rule_res);
+				// howver, if the current symbol is the symbol that we are tring to solve, put [0, 1, -1] as a placeholder
+				printf("[resolve_for_symbol] [%s] resolving RHS symbol %s\n", symbol_key, curr_rhs_symbol->str_repr);
+				int *curr_symbol_res = resolve_for_symbol(rg, curr_rhs_symbol, facts, cache, original_key, rule_ignore_list);
+				printf("[resolve_for_symbol] [%s] RHS symbol %s resolved to: ", symbol_key, curr_rhs_symbol->str_repr);
+				print_list_endl(curr_symbol_res);
 
 				// if current symbol is negated, apply negation on the results
 				if (symbol->is_negated)
@@ -159,9 +200,9 @@ int *resolve_for_symbol(Rulegraph *rg, Symbol *symbol, char* facts, FtMap* cache
 			// generate inputs for truth table
 			int num_elems = unique_symbols(rhs_symbols);
 			int total_rows = pow(2, num_elems);
-			int **table = (int **)calloc(total_rows, sizeof(int *));
+			int **table = (int **)calloc(total_rows + 1, sizeof(int *));
 			for (size_t i = 0; i < total_rows; i++)
-				table[i] = (int *)calloc(num_elems, sizeof(int));
+				table[i] = (int *)calloc(num_elems + 1, sizeof(int));
 			int* aux = (int *)calloc(num_elems, sizeof(int));
 			int curr_table_y = 0;
 			Symbol **mapping = generate_mapping_for_truth_table(rhs_symbols);
@@ -191,7 +232,8 @@ int *resolve_for_symbol(Rulegraph *rg, Symbol *symbol, char* facts, FtMap* cache
 				permutation_results,
 				curr_lhs_res,
 				num_elems,
-				rule_to_resolve->resolve_type
+				rule_to_resolve->resolve_type,
+				lhs_rule_enforce
 			);
 
 			apply_filters(
@@ -201,16 +243,16 @@ int *resolve_for_symbol(Rulegraph *rg, Symbol *symbol, char* facts, FtMap* cache
 				total_rows
 			);
 			
-			printf("[resolve_for_symbol] map\n");
-			for (size_t i = 0; i < total_rows; i++)
+			printf("[resolve_for_symbol] [%s] map\n", symbol_key);
+			for (size_t i = 0; table[i]; i++)
 			{
 				for (size_t j = 0; j < num_elems; j++)
 					printf("%d ", table[i][j]);
 				printf(" = [%d]\n", permutation_results[i]);
 			}
-			printf("[resolve_for_symbol] map end\n");
+			printf("[resolve_for_symbol] [%s] map end\n", symbol_key);
 
-			// store results of compputation in cache
+			// store results of computation in cache
 			store_results_in_cache(
 				mapping,
 				table,
@@ -218,9 +260,12 @@ int *resolve_for_symbol(Rulegraph *rg, Symbol *symbol, char* facts, FtMap* cache
 			);
 
 			// TODO free all stuff here
-			free(rule_str);
 			free(rhs_symbols_res);
 		}
+		free(rule_str);
+
+		// remove rule from ignorelist
+		remove_ignore_list(rule_ignore_list, rule_to_resolve);	
 
 	}
 	
@@ -232,20 +277,27 @@ int *resolve_for_symbol(Rulegraph *rg, Symbol *symbol, char* facts, FtMap* cache
 	cache_found = query_map(cache, symbol);
 	if (cache_found)
 	{
-		printf("[resolve_for_symbol] return %s found in cache: ", symbol->str_repr);
+		printf("[resolve_for_symbol] [%s] return %s found in cache: ", symbol_key, symbol->str_repr);
 		print_list_endl(cache_found);
-		printf("========================");
+		printf("========================\n");
 
-		int len = list_len_neg_1(cache_found);
-		memcpy(res, cache_found, len * sizeof(int));
+		memcpy(res, cache_found, MAX_VALUES * sizeof(int));
 		free(rules_to_resolve);
 		free(cache_found);
 		return res;
 	}
-	DIE(1, "[resolve_for_symbol] We did all that but cache is still empty")
+	printf("[resolve_for_symbol] [%s] We did all that but cache is still empty, resolving [0]\n", symbol_key);
+	res[0] = 0;
+	return res;
 }
 
-int *resolve_for_rule(Rulegraph *rg, Rule* rule, char *facts, FtMap* cache)
+int *resolve_for_rule(
+	Rulegraph *rg,
+	Rule* rule,
+	char *facts,
+	FtMap* cache,
+	char* original_key,
+	Rule **rule_ignore_list)
 {
 	int **rhs_symbols_res = (int**)calloc(MAX_VALUES, sizeof(int*)); // shh.. hard allocate here
 	int *inner_symbols_indices = (int *)malloc(MAX_VALUES * sizeof(int)); // shh.. hard allocate here
@@ -271,11 +323,13 @@ int *resolve_for_rule(Rulegraph *rg, Rule* rule, char *facts, FtMap* cache)
 	{
 		Symbol *curr_symbol = rule->symbol_list[i];
 
-		if (curr_symbol->type == INNER)
+		if (curr_symbol->type == INNER || curr_symbol->type == OPERATOR)
 			continue;
 
-		printf("[resolve_for_rule] resolving symbol %s: ", curr_symbol->str_repr);
-		int *curr_symbol_res = resolve_for_symbol(rg, curr_symbol, facts, cache);
+		// TODO circular check
+		printf("[resolve_for_rule] resolving symbol %s\n", curr_symbol->str_repr);
+		char *symbol_key = curr_symbol->str_repr;
+		int *curr_symbol_res = resolve_for_symbol(rg, curr_symbol, facts, cache, original_key, rule_ignore_list);
 		printf("[resolve_for_rule] symbol %s resolved to: ", curr_symbol->str_repr);
 		print_list_endl(curr_symbol_res);
 
@@ -296,9 +350,9 @@ int *resolve_for_rule(Rulegraph *rg, Rule* rule, char *facts, FtMap* cache)
 	// generate inputs for truth table
 	int num_elems = unique_symbols(rule->symbol_list);
 	int total_rows = pow(2, num_elems);
-	int **table = (int **)calloc(total_rows, sizeof(int *));
+	int **table = (int **)calloc(total_rows + 1, sizeof(int *));
 	for (size_t i = 0; i < total_rows; i++)
-		table[i] = (int *)calloc(num_elems, sizeof(int));
+		table[i] = (int *)calloc(num_elems + 1, sizeof(int));
 	int* aux = (int *)calloc(num_elems, sizeof(int));
 	int curr_table_y = 0;
 	Symbol **mapping = generate_mapping_for_truth_table(rule->symbol_list);
@@ -337,7 +391,7 @@ int *resolve_for_rule(Rulegraph *rg, Rule* rule, char *facts, FtMap* cache)
 	);
 
 	printf("[resolve_for_rule] map\n");
-	for (size_t i = 0; i < total_rows; i++)
+	for (size_t i = 0; table[i]; i++)
 	{
 		for (size_t j = 0; j < num_elems; j++)
 			printf("%d ", table[i][j]);

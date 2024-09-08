@@ -26,7 +26,8 @@ int *filter_tt_for_resolve_for_symbol(
 	int *perm_results,
 	int lhs_res,
 	int num_elems,
-	ResolveType resolve_type
+	ResolveType resolve_type,
+	int rule_enforce
 );
 
 int *filter_tt_for_resolve_for_rule(
@@ -53,4 +54,7 @@ void store_results_in_cache(
 
 int list_len_neg_1(int *list);
 void print_list_endl(int *list);
+void add_ignore_list(Rule **list, Rule *rule);
+void remove_ignore_list(Rule **list, Rule *rule);
+
 #endif  //!__ENGINE_UTILS__H__
