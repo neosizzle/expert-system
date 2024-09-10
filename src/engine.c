@@ -6,9 +6,17 @@
 #include <string.h>
 #include <stdlib.h>
 
-int *resolve_for_rule(Rulegraph *rg, Rule* rule, char* facts, FtMap* cache, char *original_key, Rule **rule_ignore_list);
+int *resolve_for_rule(Rulegraph *rg, Rule* rule, char* facts, FtMap* cache, char *original_key, Rule **rule_ignore_list, int level);
 Symbol** get_inner_symbols(Symbol **list, int *indices);
-int *resolve_for_inner(Rulegraph *rg, Symbol* inner_symbols, FtMap *cache);
+int *resolve_for_inner(
+	Rulegraph *rg,
+	Symbol* inner_symbol,
+	char *facts,
+	FtMap *cache,
+	char *original_key,
+	Rule **rule_ignore_list,
+	int level
+);
 
 // given a symbol, look for rules which implies / iffs that symbol and writes to res
 void locate_conditional_rule(Rulegraph *rg, char *input_symbol, Rule **res, Rule **ignore_list)
@@ -54,7 +62,8 @@ int *resolve_for_symbol(
 	char* facts, 
 	FtMap* cache,
 	char *original_key,
-	Rule **rule_ignore_list
+	Rule **rule_ignore_list,
+	int level
 	)
 {
 	printf("[resolve_for_symbol] [%s] Entry for %s\n",symbol->str_repr, symbol->str_repr);
@@ -105,7 +114,7 @@ int *resolve_for_symbol(
 	int *cache_found = query_map(cache, symbol);
 	if (cache_found)
 	{
-		printf("[resolve_for_symbol] [%s] %s found in cache @ %p: ", symbol_key, symbol->str_repr, cache_found);
+		printf("[resolve_for_symbol] [%s] %s found in cache: ", symbol_key, symbol->str_repr);
 		
 		print_list_endl(cache_found);
 		free(rules_to_resolve);
@@ -127,7 +136,7 @@ int *resolve_for_symbol(
 
 		// resolve that rule
 		printf("[resolve_for_symbol] [%s] resolving rule %s\n", symbol_key, rule_str);
-		int *curr_rule_res = resolve_for_rule(rg, rule_to_resolve, facts, cache, original_key, rule_ignore_list);
+		int *curr_rule_res = resolve_for_rule(rg, rule_to_resolve, facts, cache, original_key, rule_ignore_list, level);
 		printf("[resolve_for_symbol] [%s] rule %s resolved to: ", symbol_key, rule_str);
 		print_list_endl(curr_rule_res);
 
@@ -161,8 +170,8 @@ int *resolve_for_symbol(
 			Symbol **inner_symbols = get_inner_symbols(rhs_symbols, inner_symbols_indices);
 			for (size_t k = 0; inner_symbols[k]; k++)
 			{
-				Symbol *curr_symbol_list = inner_symbols[k];
-				int *inner_res = resolve_for_inner(rg, curr_symbol_list, cache);
+				Symbol *curr_inner_symbol = inner_symbols[k];
+				int *inner_res = resolve_for_inner(rg, curr_inner_symbol, facts, cache, original_key, rule_ignore_list, level);
 				int idx_for_inner_symbol = inner_symbols_indices[k];
 
 				rhs_symbols_res[idx_for_inner_symbol] = inner_res;
@@ -179,21 +188,21 @@ int *resolve_for_symbol(
 				// call resolve_for_symbol() for current symbol and save them in rhs_symbols_res
 				// howver, if the current symbol is the symbol that we are tring to solve, put [0, 1, -1] as a placeholder
 				printf("[resolve_for_symbol] [%s] resolving RHS symbol %s\n", symbol_key, curr_rhs_symbol->str_repr);
-				int *curr_symbol_res = resolve_for_symbol(rg, curr_rhs_symbol, facts, cache, original_key, rule_ignore_list);
+				int *curr_symbol_res = resolve_for_symbol(rg, curr_rhs_symbol, facts, cache, original_key, rule_ignore_list, level);
 				printf("[resolve_for_symbol] [%s] RHS symbol %s resolved to: ", symbol_key, curr_rhs_symbol->str_repr);
 				print_list_endl(curr_symbol_res);
 
 				// if current symbol is negated, apply negation on the results
-				if (symbol->is_negated)
-				{
-					for (size_t l = 0; curr_symbol_res[l] > -1; l++)
-					{
-						if (curr_symbol_res[l] == 1)
-							curr_symbol_res[l] = 0;
-						else
-							curr_symbol_res[l] = 1;
-					}
-				}
+				// if (symbol->is_negated)
+				// {
+				// 	for (size_t l = 0; curr_symbol_res[l] > -1; l++)
+				// 	{
+				// 		if (curr_symbol_res[l] == 1)
+				// 			curr_symbol_res[l] = 0;
+				// 		else
+				// 			curr_symbol_res[l] = 1;
+				// 	}
+				// }
 				rhs_symbols_res[k] = curr_symbol_res;
 			}
 			
@@ -286,8 +295,11 @@ int *resolve_for_symbol(
 		free(cache_found);
 		return res;
 	}
-	printf("[resolve_for_symbol] [%s] We did all that but cache is still empty, resolving [0]\n", symbol_key);
-	res[0] = 0;
+	printf("[resolve_for_symbol] [%s] We did all that but cache is still empty, resolving [0], is_negated: %d\n", symbol_key, symbol->is_negated);
+	if (symbol->is_negated)
+		res[0] = 1;
+	else
+		res[0] = 0;
 	return res;
 }
 
@@ -297,7 +309,9 @@ int *resolve_for_rule(
 	char *facts,
 	FtMap* cache,
 	char* original_key,
-	Rule **rule_ignore_list)
+	Rule **rule_ignore_list,
+	int level
+	)
 {
 	int **rhs_symbols_res = (int**)calloc(MAX_VALUES, sizeof(int*)); // shh.. hard allocate here
 	int *inner_symbols_indices = (int *)malloc(MAX_VALUES * sizeof(int)); // shh.. hard allocate here
@@ -311,8 +325,8 @@ int *resolve_for_rule(
 	Symbol **inner_symbols = get_inner_symbols(rule->symbol_list, inner_symbols_indices);
 	for (size_t k = 0; inner_symbols[k]; k++)
 	{
-		Symbol *curr_symbol_list = inner_symbols[k];
-		int *inner_res = resolve_for_inner(rg, curr_symbol_list, cache);
+		Symbol *curr_inner_symbol = inner_symbols[k];
+		int *inner_res = resolve_for_inner(rg, curr_inner_symbol, facts, cache, original_key, rule_ignore_list, level);
 		int idx_for_inner_symbol = inner_symbols_indices[k];
 
 		rhs_symbols_res[idx_for_inner_symbol] = inner_res;
@@ -329,21 +343,21 @@ int *resolve_for_rule(
 		// TODO circular check
 		printf("[resolve_for_rule] resolving symbol %s\n", curr_symbol->str_repr);
 		char *symbol_key = curr_symbol->str_repr;
-		int *curr_symbol_res = resolve_for_symbol(rg, curr_symbol, facts, cache, original_key, rule_ignore_list);
+		int *curr_symbol_res = resolve_for_symbol(rg, curr_symbol, facts, cache, original_key, rule_ignore_list, level);
 		printf("[resolve_for_rule] symbol %s resolved to: ", curr_symbol->str_repr);
 		print_list_endl(curr_symbol_res);
 
 		// if current symbol is negated, apply negation on the results
-		if (curr_symbol->is_negated)
-		{
-			for (size_t l = 0; curr_symbol_res[l] > -1; l++)
-			{
-				if (curr_symbol_res[l] == 1)
-					curr_symbol_res[l] = 0;
-				else
-					curr_symbol_res[l] = 1;
-			}
-		}
+		// if (curr_symbol->is_negated)
+		// {
+		// 	for (size_t l = 0; curr_symbol_res[l] > -1; l++)
+		// 	{
+		// 		if (curr_symbol_res[l] == 1)
+		// 			curr_symbol_res[l] = 0;
+		// 		else
+		// 			curr_symbol_res[l] = 1;
+		// 	}
+		// }
 		rhs_symbols_res[i] = curr_symbol_res;
 	}
 	
@@ -400,19 +414,7 @@ int *resolve_for_rule(
 	printf("[resolve_for_rule] map end\n");
 
 	// return either true, false, or true / false
-	int first_res = permutation_results[0];
-	int snd_res = -1;
-	for (size_t i = 0; permutation_results[i] != -1; i++)
-	{
-		if (permutation_results[i] != first_res)
-		{
-			snd_res = permutation_results[i];
-			break;
-		}
-	}
-	memset(permutation_results, -1, MAX_VALUES * sizeof(int));
-	permutation_results[0] = first_res;
-	permutation_results[1] = snd_res;
+	res_deduper(permutation_results);
 	
 	// TODO free all stuff here
 	free(rule_str);
@@ -420,7 +422,150 @@ int *resolve_for_rule(
 	return permutation_results;
 }
 
-int *resolve_for_inner(Rulegraph *rg, Symbol* inner_symbols, FtMap *cache)
+int *resolve_for_inner(
+	Rulegraph *rg,
+	Symbol* inner_symbol,
+	char *facts,
+	FtMap *cache,
+	char *original_key,
+	Rule **rule_ignore_list,
+	int level
+)
 {
-	return 0;
+	int **symbols_res = (int**)calloc(MAX_VALUES, sizeof(int*)); // shh.. hard allocate here
+	Symbol **symbols = inner_symbol->inner_symbols;
+	
+	int *inner_symbols_indices = (int *)malloc(MAX_VALUES * sizeof(int)); // shh.. hard allocate here
+	memset(inner_symbols_indices, -1, MAX_VALUES);
+	Symbol **_inner_symbols = get_inner_symbols(symbols, inner_symbols_indices);
+
+	for (size_t k = 0; _inner_symbols[k]; k++)
+	{
+		Symbol *curr_inner_symbol = _inner_symbols[k];
+		int *inner_res = resolve_for_inner(rg, curr_inner_symbol, facts, cache, original_key, rule_ignore_list, level);
+		int idx_for_inner_symbol = inner_symbols_indices[k];
+
+		symbols_res[idx_for_inner_symbol] = inner_res;
+	}
+
+	// iterate through rhs symbols
+	for (size_t k = 0; symbols[k]; k++)
+	{
+		Symbol *curr_rhs_symbol = symbols[k];
+		
+		if (curr_rhs_symbol->type == INNER || curr_rhs_symbol->type == OPERATOR)
+			continue;
+		
+		char *symbol_key = curr_rhs_symbol->str_repr;
+		if (curr_rhs_symbol->is_negated)
+			symbol_key += 1;
+
+		// call resolve_for_symbol() for current symbol and save them in symbols_res
+		// howver, if the current symbol is the symbol that we are tring to solve, put [0, 1, -1] as a placeholder
+		printf("[resolve_for_inner] [%s] resolving RHS symbol %s\n", symbol_key, curr_rhs_symbol->str_repr);
+		int *curr_symbol_res = resolve_for_symbol(rg, curr_rhs_symbol, facts, cache, original_key, rule_ignore_list, level);
+		printf("[resolve_for_inner] [%s] RHS symbol %s resolved to: ", symbol_key, curr_rhs_symbol->str_repr);
+		print_list_endl(curr_symbol_res);
+
+		// if current symbol is negated, apply negation on the results
+		// if (inner_symbol->is_negated)
+		// {
+		// 	for (size_t l = 0; curr_symbol_res[l] > -1; l++)
+		// 	{
+		// 		if (curr_symbol_res[l] == 1)
+		// 			curr_symbol_res[l] = 0;
+		// 		else
+		// 			curr_symbol_res[l] = 1;
+		// 	}
+		// }
+		symbols_res[k] = curr_symbol_res;
+	}
+
+	// generate inputs for truth table
+	int num_elems = unique_symbols(symbols);
+	int total_rows = pow(2, num_elems);
+	int **table = (int **)calloc(total_rows + 1, sizeof(int *));
+	for (size_t i = 0; i < total_rows; i++)
+		table[i] = (int *)calloc(num_elems + 1, sizeof(int));
+	int* aux = (int *)calloc(num_elems, sizeof(int));
+	int curr_table_y = 0;
+	Symbol **mapping = generate_mapping_for_truth_table(symbols);
+
+	// generate & resolve truth permutations
+	generate_truth_permutations(
+		table,
+		num_elems,
+		&curr_table_y,
+		0,
+		aux
+	);
+
+	int *permutation_results = resolve_truth_permutations(
+		mapping,
+		table,
+		curr_table_y,
+		symbols
+	);
+
+	// filter the truth table to only extract relevant rules
+	int *table_indices_to_keep = filter_tt_for_resolve_for_inner(
+		table,
+		symbols_res,
+		symbols,
+		mapping,
+		permutation_results,
+		num_elems
+	);
+
+	apply_filters(
+		table,
+		permutation_results,
+		table_indices_to_keep,
+		total_rows
+	);
+	
+	// return either true, false, or true / false
+	res_deduper(permutation_results);
+
+	printf("[resolve_for_inner] [-] resolved to: ");
+	print_list_endl(permutation_results);
+	return permutation_results;
+}
+
+void resolve_query(Rulegraph *rule_graph, char *facts_list, char* query_list)
+{
+	// init cache
+	FtMap *cache = ft_map_new(69);
+
+	for (size_t query_idx = 0; query_list[query_idx]; query_idx++)
+	{
+		char query_str[2] = {query_list[query_idx], 0};
+		Symbol *query_symbol = generate_symbol_from(query_str, 0, 0);
+		Rule **ignore_list = calloc(1024, sizeof(Rule *));
+		int level = 0;
+		int *res = resolve_for_symbol(
+			rule_graph,
+			query_symbol,
+			facts_list,
+			cache,
+			query_str,
+			ignore_list,
+			level
+			);
+
+		// return either true, false, or true / false
+		res_deduper(res);
+
+		// if ambigious, assume false
+		if (list_len_neg_1(res) > 1)
+			printf("[resolve_query] %s is %d\n", query_str, 0);
+		else
+			printf("[resolve_query] %s is %d\n", query_str, res[0]);
+		
+		free_symbol(query_symbol);
+		free(res);
+		free(ignore_list);
+	}
+
+	free_ft_map(cache);
 }

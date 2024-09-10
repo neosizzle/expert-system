@@ -50,11 +50,11 @@ void remove_ignore_list(Rule **list, Rule *rule)
 		++i;
 	}
 	
-	i = -1;
-	while (list[++i])
-	{
-		printf("[remove_key_heap] keyheap is now %p\n", list[i]);
-	}
+	// i = -1;
+	// while (list[++i])
+	// {
+	// 	printf("[remove_key_heap] keyheap is now %p\n", list[i]);
+	// }
 }
 
 // solve a boolean equation value Operator value
@@ -277,7 +277,7 @@ int *resolve_truth_permutations(
 		for (size_t i = 0; symbols[i]; i++)
 		{
 			Symbol *symbol = symbols[i];
-			if (symbol->type != VARIABLE && symbol->type != FACT)
+			if (symbol->type != VARIABLE && symbol->type != FACT && symbol->type != INNER)
 				continue;
 
 			// see if symbol appear in mapping list
@@ -301,7 +301,7 @@ int *resolve_truth_permutations(
 
 		if (values_idx != operator_idx + 1)
 		{
-			DIE(1, "[resolve_truth_permutations] invalid number of operators vs values");
+			DIE(1, "[resolve_truth_permutations] invalid number of operators vs values: values_idx %d, operator_idx + 1: %d", values_idx, operator_idx + 1);
 		}
 
 		// walk through the symbols and select them to generate the result for that combination
@@ -347,7 +347,7 @@ Symbol** generate_mapping_for_truth_table(Symbol **list)
 	// iterate the list of symbols
 	for (size_t i = 0; list[i] ; i++)
 	{
-		if (list[i]->type != VARIABLE && list[i]->type != FACT)
+		if (list[i]->type != VARIABLE && list[i]->type != FACT && list[i]->type != INNER)
 			continue;
 		
 		char *key = list[i]->str_repr;	
@@ -402,7 +402,7 @@ int unique_symbols(Symbol **list)
 	// iterate the list of symbols
 	for (size_t i = 0; list[i] ; i++)
 	{
-		if (list[i]->type != VARIABLE && list[i]->type != FACT)
+		if (list[i]->type != VARIABLE && list[i]->type != FACT && list[i]->type != INNER)
 			continue;
 		
 		char *key = list[i]->str_repr;	
@@ -559,6 +559,83 @@ int *filter_tt_for_resolve_for_symbol(
 				{
 					continue;
 				}
+				++skip_flag;
+				break;
+			}
+		}
+
+		// check skip flag. If yes, continue
+		if (skip_flag)
+			continue;
+		
+		// if no, add curr_idx to res[++res_idx];
+		res[++res_idx] = curr_idx;
+	}
+	
+	return res;
+}
+
+int *filter_tt_for_resolve_for_inner(
+	int **table,
+	int **rhs_symbols_res,
+	Symbol **rhs_symbols,
+	Symbol **mapping,
+	int *perm_results,
+	int num_elems
+)
+{
+	int* res =  (int *)malloc(MAX_VALUES * sizeof(int)); // shh.. hard allocate here
+	memset(res, -1, MAX_VALUES * sizeof(int));
+	int curr_idx = -1;
+	int res_idx = -1;
+
+	while (perm_results[++curr_idx] != -1)
+	{
+		int curr_result = perm_results[curr_idx];
+		int *curr_symbol_states = table[curr_idx];
+		
+		// filter truth table based to contain saved symbol results
+		// col by col
+		int *table_row = table[curr_idx];
+		int skip_flag = 0;
+		// iterate column of table
+		for (size_t curr_col = 0; curr_col < num_elems; curr_col++)
+		{
+			// get mapping entry
+			Symbol *to_map = mapping[curr_col];
+
+			// find index of symbol in rhs_symbols
+			int actual_symbol_idx = -1;
+			int actual_symbol_idx_offset = 0;
+			while (rhs_symbols[++actual_symbol_idx])
+			{
+				Symbol* symbol = rhs_symbols[actual_symbol_idx];
+
+				if (symbol->type != VARIABLE && symbol->type != INNER && symbol->type != FACT)
+					++actual_symbol_idx_offset;
+				if (!strcmp(symbol->str_repr, to_map->str_repr))
+					break;
+			}
+			
+			// after get index, obtain result list of that symbol
+			int *actual_symbol_results = rhs_symbols_res[actual_symbol_idx]; // dont need offset or else read null memory?
+			// for (size_t i = 0; i < MAX_VALUES && actual_symbol_results[i] != -1; i++)
+			// {
+			// 	printf("[fttforsymbol] [%d] %d\n", i, actual_symbol_results[i]);
+			// }
+
+			// check if column value is in result list and initialize found flag
+			int found_flag = 0;
+			int res_to_check = table_row[curr_col];
+			for (size_t i = 0; actual_symbol_results[i] != -1; i++)
+			{
+				if (actual_symbol_results[i] == res_to_check)
+					++found_flag;
+			}
+			
+			// if no found_flag, set skip flag and break
+			if (!found_flag)
+			{
 				++skip_flag;
 				break;
 			}
@@ -752,4 +829,22 @@ void store_results_in_cache(
 		memset(aux, -1, MAX_VALUES * sizeof(int));
 	}
 	
+}
+
+void res_deduper(int *permutation_results)
+{
+	// return either true, false, or true / false
+	int first_res = permutation_results[0];
+	int snd_res = -1;
+	for (size_t i = 0; permutation_results[i] != -1; i++)
+	{
+		if (permutation_results[i] != first_res)
+		{
+			snd_res = permutation_results[i];
+			break;
+		}
+	}
+	memset(permutation_results, -1, MAX_VALUES * sizeof(int));
+	permutation_results[0] = first_res;
+	permutation_results[1] = snd_res;
 }

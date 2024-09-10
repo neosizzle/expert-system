@@ -1,0 +1,6 @@
+A + B | C => D
+=BC
+?D
+
+# D is true if =BC and without parenthesis
+# D is [true, false] if =BC and with parenthesis

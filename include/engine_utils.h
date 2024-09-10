@@ -39,6 +39,16 @@ int *filter_tt_for_resolve_for_rule(
 	int num_elems
 );
 
+int *filter_tt_for_resolve_for_inner(
+	int **table,
+	int **rhs_symbols_res,
+	Symbol **rhs_symbols,
+	Symbol **mapping,
+	int *perm_results,
+	int num_elems
+
+);
+
 void apply_filters(
 	int **table,
 	int *perm_results,
@@ -56,5 +66,6 @@ int list_len_neg_1(int *list);
 void print_list_endl(int *list);
 void add_ignore_list(Rule **list, Rule *rule);
 void remove_ignore_list(Rule **list, Rule *rule);
+void res_deduper(int *permutation_results);
 
 #endif  //!__ENGINE_UTILS__H__
