@@ -227,6 +227,7 @@ int update_rule_graph_with_facts(Rulegraph *rule_graph, char *facts)
 
 void print_rulegraph(Rulegraph *rule_graph)
 {
+	printf("Rules:\n");
 	for (size_t i = 0; rule_graph->all_rules_vertices[i]; i++)
 	{
 		Rule *rule = rule_graph->all_rules_vertices[i];

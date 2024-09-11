@@ -2,6 +2,7 @@
 #include "ft_macros.h"
 #include "ft_map.h"
 #include "engine_utils.h"
+#include "colors.h"
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
@@ -541,6 +542,14 @@ void resolve_query(Rulegraph *rule_graph, char *facts_list, char* query_list)
 	{
 		char query_str[2] = {query_list[query_idx], 0};
 		Symbol *query_symbol = generate_symbol_from(query_str, 0, 0);
+		
+		// check symbol for fact
+		char *symbol_key = query_symbol->str_repr;
+		if (query_symbol->is_negated)
+			symbol_key += 1;
+		if (strstr(facts_list, symbol_key))
+			query_symbol->type = FACT;
+
 		Rule **ignore_list = calloc(1024, sizeof(Rule *));
 		int level = 0;
 		int *res = resolve_for_symbol(
@@ -558,9 +567,9 @@ void resolve_query(Rulegraph *rule_graph, char *facts_list, char* query_list)
 
 		// if ambigious, assume false
 		if (list_len_neg_1(res) > 1)
-			printf("[resolve_query] %s is %d\n", query_str, 0);
+			printf(YEL "[resolve_query] %s is %d" RESET "\n", query_str, 0);
 		else
-			printf("[resolve_query] %s is %d\n", query_str, res[0]);
+			printf(YEL "[resolve_query] %s is %d" RESET "\n", query_str, res[0]);
 		
 		free_symbol(query_symbol);
 		free(res);

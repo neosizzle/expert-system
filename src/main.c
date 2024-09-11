@@ -3,6 +3,7 @@
 #include "get_next_line.h"
 #include "engine.h"
 #include "ft_map.h"
+#include "shell.h"
 
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -286,43 +287,63 @@ int main(int argc, char *argv[])
 
 	// update the symbols here w/ facts here because we are cool and lazy
 	update_rule_graph_with_facts(rule_graph, facts_list);
+	print_banner();
 	print_rulegraph(rule_graph);
+	print_help();
 
-	// init cache
-	// FtMap *cache = ft_map_new(69);
-
-	// TODO run expert system with said rules and query
-	resolve_query(rule_graph, facts_list, query_list);
-	// char *symbol_str = "D";
-	// Symbol *s1 = generate_symbol_from(symbol_str, 0, 0);
-	// Rule **ignore_list = calloc(1024, sizeof(Rule *));
-	// int *res = resolve_for_symbol(rule_graph, s1, facts_list, cache, symbol_str, ignore_list);
-	// resolve_for_symbol(rule_graph, "C", facts_list);
-	
 	// busy spin
 	while (1)
 	{
 		// prompt for fact change
-		write(1, "prompt: ", 8);
+		write(1, "# ", 2);
 		char *prompt = get_next_line(0);
-
-		if (strlen(prompt) < ALPHA_COUNT)
-		{
-			printf("updating facts: %s\n", prompt);
-			memset(facts_list, ALPHA_COUNT, 0);
-			memcpy(facts_list, prompt, strlen(prompt));
-			update_rule_graph_with_facts(rule_graph, facts_list);
-		}
+		prompt[strlen(prompt) - 1] = 0;
 
 		// exit prompt
-		if (!strcmp(prompt, "exit\n"))
+		if (!strcmp(prompt, "exit"))
 		{
 			free(prompt);
 			break;
 		}
 
-		// apply changes and run expert system again
+		// clear screen
+		if (!strcmp(prompt, "clear"))
+		{
+    		system("clear");
+			free(prompt);
+			continue;
+		}
+
+		// help
+		if (!strcmp(prompt, "help"))
+		{
+    		print_help();
+			free(prompt);
+			continue;
+		}
+
+
+		// change query
+
+		// change fact
+
+		// ls
+
+		// runs query
+
+		// any other command
+		printf("Command %s not found. type 'help' to list commands\n", prompt);
+
+		// if (strlen(prompt) < ALPHA_COUNT)
+		// {
+		// 	printf("updating facts: %s\n", prompt);
+		// 	memset(facts_list, ALPHA_COUNT, 0);
+		// 	memcpy(facts_list, prompt, strlen(prompt));
+		// 	update_rule_graph_with_facts(rule_graph, facts_list);
+		// }
+
 		free(prompt);
+
 	}
 
 	free_rulegraph(rule_graph);
