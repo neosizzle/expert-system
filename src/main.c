@@ -233,6 +233,9 @@ void parse_rule(char *line, Rulegraph *rule_graph)
 			lhs_rule->resolve_type = IMPLIES;
 			lhs_rule->implies = rhs_rule;
 		}
+
+		// free newly generated symbols
+		free_symbol_list(lhs_symbols);
 	}
 
 	// printf("rule %s with %s @ %s\n", lhs, rhs, rule);
@@ -291,6 +294,12 @@ int main(int argc, char *argv[])
 	print_rulegraph(rule_graph);
 	print_help();
 
+	#ifdef __DEBUG__
+        printf("__DEBUG__ DEFINED\n");
+	#else
+        printf("__DEBUG__ not defined\n");
+    #endif
+
 	// busy spin
 	while (1)
 	{
@@ -323,27 +332,78 @@ int main(int argc, char *argv[])
 		}
 
 
-		// change query
-
 		// change fact
+		if (!strcmp(prompt, "fact"))
+		{
+			printf("\n");
+			while (1)
+			{
+				write(1, "fact# ", 6);
+				char *fact_prompt = get_next_line(0);
+				fact_prompt[strlen(fact_prompt) - 1] = 0;
+				if (strlen(fact_prompt) < ALPHA_COUNT)
+				{
+					memset(facts_list, 0, ALPHA_COUNT);
+					memcpy(facts_list, fact_prompt, strlen(fact_prompt));
+					update_rule_graph_with_facts(rule_graph, facts_list);
+					printf("fact updated %s\n", facts_list);
+					free(fact_prompt);
+					break;
+				}
+
+				free(fact_prompt);
+			}
+			free(prompt);
+			continue;
+		}
+
+		// change query
+		if (!strcmp(prompt, "query"))
+		{
+			printf("\n");
+			while (1)
+			{
+				write(1, "query# ", 7);
+				char *query_prompt = get_next_line(0);
+				query_prompt[strlen(query_prompt) - 1] = 0;
+				if (strlen(query_prompt) < ALPHA_COUNT)
+				{
+					memset(query_list, 0, ALPHA_COUNT);
+					memcpy(query_list, query_prompt, strlen(query_prompt));
+					update_rule_graph_with_facts(rule_graph, query_list);
+					printf("query updated %s\n", query_list);
+					free(query_prompt);
+					break;
+				}
+
+				free(query_prompt);
+			}
+			free(prompt);
+			continue;
+		}
 
 		// ls
+		if (!strcmp(prompt, "ls"))
+		{
+			print_rulegraph(rule_graph);
+			printf("\nQuery: %s\n", query_list);
+			printf("Facts: %s\n", facts_list);
+			free(prompt);
+			continue;
+		}
 
 		// runs query
+		if (!strcmp(prompt, "run"))
+		{
+			resolve_query(rule_graph, facts_list, query_list);
+			free(prompt);
+			continue;
+		}
 
 		// any other command
 		printf("Command %s not found. type 'help' to list commands\n", prompt);
 
-		// if (strlen(prompt) < ALPHA_COUNT)
-		// {
-		// 	printf("updating facts: %s\n", prompt);
-		// 	memset(facts_list, ALPHA_COUNT, 0);
-		// 	memcpy(facts_list, prompt, strlen(prompt));
-		// 	update_rule_graph_with_facts(rule_graph, facts_list);
-		// }
-
 		free(prompt);
-
 	}
 
 	free_rulegraph(rule_graph);

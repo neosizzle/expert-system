@@ -99,7 +99,6 @@ void free_rule(Rule *rule)
 {
 	if (rule->symbol_list)
 		free_symbol_list(rule->symbol_list);
-
 	// we trust free_rule_list to free these already - HAVE FAITH
 	// if (rule->implies && rule->implies->ref_cnt == 1)
 	// 	free_rule(rule->implies);

@@ -1,7 +1,7 @@
 NAME=expertsystem
-CC = gcc -fsanitize=address -g3
-# CC = gcc
-CC_FLAGS = -Wall -Wextra -lm -ldl
+CC = gcc
+LINK_FLAGS = -Wall -Wextra -lm -ldl
+CC_FLAGS = -c
 INCS = -Iinclude
 BUILDDIR=build/
 SRCS = ${wildcard src/*.c}
@@ -20,22 +20,40 @@ NC=\033[0m # No Color
 all : ${NAME}
 	@echo "${GREEN}✔️  Done building..${NC}"
 
+debug : BUILDDIR=build_dbg/
+debug : OBJS_TARGET=${addprefix ${BUILDDIR},${subst /,_,${OBJS}}}
+debug : CC_FLAGS += -D __DEBUG__
+debug : LINK_FLAGS += -fsanitize=address -g3
+debug : ${NAME}
+	@echo "${GREEN}✔️  Done building debug..${NC}"
+
 ${NAME}: ${OBJS_TARGET}
 	@echo "${GREEN}😏  Linking..${NC}"
-	@${CC} ${BUILDDIR}*.o ${CC_FLAGS} -o ${NAME}
+	@${CC} ${BUILDDIR}*.o ${LINK_FLAGS} -o ${NAME}
+
+build_dbg/%.o : ${OBJS}
+	@echo "${GREEN}📇  Compile debug finish..${NC}"
 
 build/%.o : ${OBJS}
 	@echo "${GREEN}📇  Compile finish..${NC}"
 
 .c.o :
 	@echo "${GREEN}📇  Compiling $<..${NC}"
-	@${CC} -c ${INCS} $< -o ${BUILDDIR}${subst /,_,$@}
+	@${CC} ${INCS} ${CC_FLAGS} $< -o ${BUILDDIR}${subst /,_,$@}
 
 clean : 
 	@echo "${YELLOW}🗑️  Removing Objects..${NC}"
 	@rm -rf ${BUILDDIR}*.o
 
+
+clean_dbg : BUILDDIR = build_dbg/
+clean_dbg : clean
+
 fclean : clean
+	@echo "${YELLOW}🗑️  Removing ${NAME}..${NC}"
+	@rm -rf ${NAME}
+
+fclean_dbg : clean_dbg
 	@echo "${YELLOW}🗑️  Removing ${NAME}..${NC}"
 	@rm -rf ${NAME}
 
