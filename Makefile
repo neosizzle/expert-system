@@ -1,7 +1,7 @@
 NAME=expertsystem
 CC = gcc
-LINK_FLAGS = -Wall -Wextra -lm -ldl
-CC_FLAGS = -c
+LINK_FLAGS = -Wall -Wextra -lm -ldl 
+CC_FLAGS = -c 
 INCS = -Iinclude
 BUILDDIR=build/
 SRCS = ${wildcard src/*.c}
@@ -22,7 +22,7 @@ all : ${NAME}
 
 debug : BUILDDIR=build_dbg/
 debug : OBJS_TARGET=${addprefix ${BUILDDIR},${subst /,_,${OBJS}}}
-debug : CC_FLAGS += -D __DEBUG__
+debug : CC_FLAGS += -D __DEBUG__  -fsanitize=address -g3
 debug : LINK_FLAGS += -fsanitize=address -g3
 debug : ${NAME}
 	@echo "${GREEN}✔️  Done building debug..${NC}"

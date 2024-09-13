@@ -1,4 +1,7 @@
 #include "rules.h"
+#include "validation.h"
+#include "ft_macros.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -11,8 +14,19 @@ Symbol *generate_symbol_from(char *str, int is_inner, Symbol **inner_symbols)
 	
 	res->possible_results = (int *)calloc(MAX_POSSIBLE_RESULTS, sizeof(int));// shh.. hard allocate here
 	res->is_negated = 0;
+	res->inner_symbols = 0;
+	res->str_repr = 0;
+
 	if (str[0] == '!')
 		res->is_negated = 1;
+
+	// strlen > 2, reject.
+	if (strlen(str) > 2)
+	{
+		EPRINTF("[generate_symbol_from] Maximum of symbol length is 2, got %s\n", str);
+		free_symbol(res);
+		return 0;
+	}
 
 	if (is_inner)
 	{
@@ -36,6 +50,16 @@ Symbol *generate_symbol_from(char *str, int is_inner, Symbol **inner_symbols)
 		}
 		else
 		{
+			// check uppercase variable
+			char *key = str;
+			if (res->is_negated)
+				++key;
+			if (!is_upper(key))
+			{
+				EPRINTF("[generate_symbol_from] Key needs to be uppercased got %s\n", key);
+				free_symbol(res);
+				return 0;
+			}
 			res->type = VARIABLE;
 			res->operator= NOP;
 		}
@@ -83,7 +107,8 @@ void free_symbol(Symbol *symbol)
 		free_symbol_list(symbol->inner_symbols); 
 	if (symbol->possible_results)
 		free(symbol->possible_results);
-	free(symbol->str_repr);
+	if (symbol->str_repr)
+		free(symbol->str_repr);
 	free(symbol);
 }
 

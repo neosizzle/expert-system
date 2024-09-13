@@ -4,6 +4,7 @@
 #include "engine.h"
 #include "ft_map.h"
 #include "shell.h"
+#include "validation.h"
 
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -11,10 +12,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
-
-#define ALPHA_COUNT 26
-#define IMPL_RESOLVER " => "
-#define IFF_RESOLVER " <=> "
 
 int find_matching_rp(char *line)
 {
@@ -53,9 +50,23 @@ Symbol **parse_expression(char *line)
 		// i will always point to the '(', so we will find the matching ')' here.
 		int matching_rp = find_matching_rp(line + i + 1); // offset + 0 index?
 
+		// no matching ')'
+		if (matching_rp < 0)
+		{
+			free_symbol_list(res);
+			EPRINTF("Missing ')' at %s\n", line);
+			return 0;
+		}		
+
 		// extract the subscring and recurse to get the symbols inside the parenthesis
 		char *inner = strndup(line + i + 1, matching_rp);
-		all_inner_symbols[inner_symbols_idx++] = parse_expression(inner);
+		Symbol **new_expression = parse_expression(inner);
+		if (!new_expression)
+		{
+			free_symbol_list(res);
+			return 0;
+		}
+		all_inner_symbols[inner_symbols_idx++] = new_expression;
 		free(inner);
 
 		i += matching_rp + 2; // offset + 0 index
@@ -83,7 +94,18 @@ Symbol **parse_expression(char *line)
 			// first '(' found, find symbol list to replace
 			if (pstack == 0)
 			{
-				res[res_idx] = generate_symbol_from(curr_token, 1, all_inner_symbols[inner_symbols_idx]);
+				Symbol *new_symbol =  generate_symbol_from(curr_token, 1, all_inner_symbols[inner_symbols_idx]);
+				
+				// parsing error
+				if (!new_symbol)
+				{
+					EPRINTF("[parse_expression], invalid parenthesis, got %s\n", line);
+					free(linedup);
+					free_symbol_list(res);
+					return 0;
+				}
+
+				res[res_idx] = new_symbol;
 				res_idx += 1;
 				inner_symbols_idx += 1;
 			}
@@ -109,12 +131,33 @@ Symbol **parse_expression(char *line)
 		// real symbol which is not in parenthesis now, parse it normally
 		if (pstack == 0)
 		{
-			res[res_idx] = generate_symbol_from(curr_token, 0, 0);
+			Symbol *new_symbol =  generate_symbol_from(curr_token, 0, 0);
+				
+			// parsing error
+			if (!new_symbol)
+			{
+				EPRINTF("[parse_expression], invalid parenthesis, got %s\n", line);
+				free(linedup);
+				free_symbol_list(res);
+				return 0;
+			}
+
+
+			res[res_idx] = new_symbol;
 			res_idx += 1;
 		}
 
 		curr_token = strtok(NULL, " ");
 	}
+
+	// check expressions are in order - no stray operators
+	if (check_invalid_operators(res, line))
+	{
+		free(linedup);
+		free_symbol_list(res);
+		return 0;
+	}
+	
 	free(linedup);
 	return res;
 }
@@ -123,6 +166,11 @@ int parse_facts_or_query(char *line, char *symbol_str_list)
 {
 	int i = 0;
 	char *facts = strtok(line, "#");
+	if (!is_upper_and_nl(facts + 1))
+	{
+		EPRINTF("[parse_facts_or_query] Must be uppercase, got %s\n", facts + 1);
+		return 1;
+	}
 	while (++i)
 	{
 		if (facts[i] == '\n' || facts[i] == 0 || facts[i] == ' ')
@@ -147,7 +195,7 @@ int parse_facts_or_query(char *line, char *symbol_str_list)
 	return 0;
 }
 
-void parse_rule(char *line, Rulegraph *rule_graph)
+int parse_rule(char *line, Rulegraph *rule_graph)
 {
 	char *rule = strtok(line, "#");
 	char lhs[128] = {0};
@@ -156,15 +204,9 @@ void parse_rule(char *line, Rulegraph *rule_graph)
 	// check if rule has implication or iff
 	char *resolver = 0;
 	char *resolver_pos = 0;
-	if (resolver_pos = strstr(rule, IMPL_RESOLVER))
-		resolver = IMPL_RESOLVER;
-	else if (resolver_pos = strstr(rule, IFF_RESOLVER))
-		resolver = IFF_RESOLVER;
-	else
-	{
-		EPRINTF("No resolve found at rule %s\n", rule);
-		return;
-	}
+	int assign_res = assign_resolver(rule, &resolver, &resolver_pos);
+	if (assign_res)
+		return 1;
 
 	// clean the rule and split into 2 sides
 	if (rule[strlen(rule) - 1] == '\n')
@@ -173,9 +215,19 @@ void parse_rule(char *line, Rulegraph *rule_graph)
 	strncpy(rhs, resolver_pos + strlen(resolver), (strlen(rule) - strlen(lhs) - strlen(resolver)));
 
 	// get the expressions for both sides
-	// TODO for rhs, we search previous rules for the same symbols
 	Symbol **lhs_symbols = parse_expression(lhs);
 	Symbol **rhs_symbols = parse_expression(rhs);
+	
+	// paarsing error check
+	if (!lhs_symbols || !rhs_symbols)
+	{
+		if (lhs_symbols)
+			free_symbol_list(lhs_symbols);
+		if (rhs_symbols)
+			free_symbol_list(rhs_symbols);
+		return 1;
+	}
+
 	char *lhs_symbols_str = serialize_symbols(lhs_symbols);
 	char *rhs_symbols_str = serialize_symbols(rhs_symbols);
 
@@ -219,8 +271,11 @@ void parse_rule(char *line, Rulegraph *rule_graph)
 	{
 		if (lhs_rule->resolve_type != NO_RESOLVE)
 		{
+			free_symbol_list(lhs_symbols);
+			free(lhs_symbols_str);
+			free(rhs_symbols_str);
 			EPRINTF("Resolve already found at rule %s\n", lhs_symbols_str);
-			return;
+			return 1;
 		}
 
 		if (!strcmp(resolver, IFF_RESOLVER))
@@ -241,9 +296,10 @@ void parse_rule(char *line, Rulegraph *rule_graph)
 	// printf("rule %s with %s @ %s\n", lhs, rhs, rule);
 	free(lhs_symbols_str);
 	free(rhs_symbols_str);
+	return 0;
 }
 
-void parse_input_file(int fd, Rulegraph *rule_graph, char *query_list, char *facts_list) // take in array of rules
+int parse_input_file(int fd, Rulegraph *rule_graph, char *query_list, char *facts_list) // take in array of rules
 {
 	for (char *line = get_next_line(fd); line != 0; free(line), line = get_next_line(fd))
 	{
@@ -253,16 +309,26 @@ void parse_input_file(int fd, Rulegraph *rule_graph, char *query_list, char *fac
 
 		// if line starts with =, parse facts
 		else if (line[0] == '=')
-			parse_facts_or_query(line, facts_list);
+		{
+			if (parse_facts_or_query(line, facts_list))
+				return 1;
+		}
 
 		// if line starts with ?, parse query
 		else if (line[0] == '?')
-			parse_facts_or_query(line, query_list);
+		{
+			if (parse_facts_or_query(line, query_list))
+				return 1;
+		}
 
 		// else, parse rule
 		else
-			parse_rule(line, rule_graph);
+		{
+			if (parse_rule(line, rule_graph))			
+				return 1;
+		}
 	}
+	return 0;
 }
 
 int main(int argc, char *argv[])
@@ -286,7 +352,13 @@ int main(int argc, char *argv[])
 	char *query_list = calloc(ALPHA_COUNT, 1);
 	char *facts_list = calloc(ALPHA_COUNT, 1);
 
-	parse_input_file(fd, rule_graph, query_list, facts_list);
+	if (parse_input_file(fd, rule_graph, query_list, facts_list))
+	{
+		free_rulegraph(rule_graph);
+		free(facts_list);
+		free(query_list);
+		return 1;
+	}
 
 	// update the symbols here w/ facts here because we are cool and lazy
 	update_rule_graph_with_facts(rule_graph, facts_list);
@@ -301,110 +373,116 @@ int main(int argc, char *argv[])
     #endif
 
 	// busy spin
-	while (1)
-	{
-		// prompt for fact change
-		write(1, "# ", 2);
-		char *prompt = get_next_line(0);
-		prompt[strlen(prompt) - 1] = 0;
+	// while (1)
+	// {
+	// 	// prompt for fact change
+	// 	write(1, "# ", 2);
+	// 	char *prompt = get_next_line(0);
+	// 	prompt[strlen(prompt) - 1] = 0;
 
-		// exit prompt
-		if (!strcmp(prompt, "exit"))
-		{
-			free(prompt);
-			break;
-		}
+	// 	// exit prompt
+	// 	if (!strcmp(prompt, "exit"))
+	// 	{
+	// 		free(prompt);
+	// 		break;
+	// 	}
 
-		// clear screen
-		if (!strcmp(prompt, "clear"))
-		{
-    		system("clear");
-			free(prompt);
-			continue;
-		}
+	// 	// clear screen
+	// 	if (!strcmp(prompt, "clear"))
+	// 	{
+    // 		system("clear");
+	// 		free(prompt);
+	// 		continue;
+	// 	}
 
-		// help
-		if (!strcmp(prompt, "help"))
-		{
-    		print_help();
-			free(prompt);
-			continue;
-		}
+	// 	// help
+	// 	if (!strcmp(prompt, "help"))
+	// 	{
+    // 		print_help();
+	// 		free(prompt);
+	// 		continue;
+	// 	}
 
 
-		// change fact
-		if (!strcmp(prompt, "fact"))
-		{
-			printf("\n");
-			while (1)
-			{
-				write(1, "fact# ", 6);
-				char *fact_prompt = get_next_line(0);
-				fact_prompt[strlen(fact_prompt) - 1] = 0;
-				if (strlen(fact_prompt) < ALPHA_COUNT)
-				{
-					memset(facts_list, 0, ALPHA_COUNT);
-					memcpy(facts_list, fact_prompt, strlen(fact_prompt));
-					update_rule_graph_with_facts(rule_graph, facts_list);
-					printf("fact updated %s\n", facts_list);
-					free(fact_prompt);
-					break;
-				}
+	// 	// change fact
+	// 	if (!strcmp(prompt, "fact"))
+	// 	{
+	// 		printf("\n");
+	// 		while (1)
+	// 		{
+	// 			write(1, "fact# ", 6);
+	// 			char *fact_prompt = get_next_line(0);
+	// 			fact_prompt[strlen(fact_prompt) - 1] = 0;
+	// 			if (strlen(fact_prompt) < ALPHA_COUNT && is_upper(fact_prompt))
+	// 			{
+	// 				memset(facts_list, 0, ALPHA_COUNT);
+	// 				memcpy(facts_list, fact_prompt, strlen(fact_prompt));
+	// 				update_rule_graph_with_facts(rule_graph, facts_list);
+	// 				printf("fact updated %s\n", facts_list);
+	// 				free(fact_prompt);
+	// 				break;
+	// 			}
+	// 			else {
+	// 				printf("Fact invalid \n");
+	// 			}
 
-				free(fact_prompt);
-			}
-			free(prompt);
-			continue;
-		}
+	// 			free(fact_prompt);
+	// 		}
+	// 		free(prompt);
+	// 		continue;
+	// 	}
 
-		// change query
-		if (!strcmp(prompt, "query"))
-		{
-			printf("\n");
-			while (1)
-			{
-				write(1, "query# ", 7);
-				char *query_prompt = get_next_line(0);
-				query_prompt[strlen(query_prompt) - 1] = 0;
-				if (strlen(query_prompt) < ALPHA_COUNT)
-				{
-					memset(query_list, 0, ALPHA_COUNT);
-					memcpy(query_list, query_prompt, strlen(query_prompt));
-					update_rule_graph_with_facts(rule_graph, query_list);
-					printf("query updated %s\n", query_list);
-					free(query_prompt);
-					break;
-				}
+	// 	// change query
+	// 	if (!strcmp(prompt, "query"))
+	// 	{
+	// 		printf("\n");
+	// 		while (1)
+	// 		{
+	// 			write(1, "query# ", 7);
+	// 			char *query_prompt = get_next_line(0);
+	// 			query_prompt[strlen(query_prompt) - 1] = 0;
+	// 			if (strlen(query_prompt) < ALPHA_COUNT && is_upper(query_prompt))
+	// 			{
+	// 				memset(query_list, 0, ALPHA_COUNT);
+	// 				memcpy(query_list, query_prompt, strlen(query_prompt));
+	// 				update_rule_graph_with_facts(rule_graph, query_list);
+	// 				printf("query updated %s\n", query_list);
+	// 				free(query_prompt);
+	// 				break;
+	// 			}
+	// 			else {
+	// 				printf("Query invalid \n");
+	// 			}
 
-				free(query_prompt);
-			}
-			free(prompt);
-			continue;
-		}
+	// 			free(query_prompt);
+	// 		}
+	// 		free(prompt);
+	// 		continue;
+	// 	}
 
-		// ls
-		if (!strcmp(prompt, "ls"))
-		{
-			print_rulegraph(rule_graph);
-			printf("\nQuery: %s\n", query_list);
-			printf("Facts: %s\n", facts_list);
-			free(prompt);
-			continue;
-		}
+	// 	// ls
+	// 	if (!strcmp(prompt, "ls"))
+	// 	{
+	// 		print_rulegraph(rule_graph);
+	// 		printf("\nQuery: %s\n", query_list);
+	// 		printf("Facts: %s\n", facts_list);
+	// 		free(prompt);
+	// 		continue;
+	// 	}
 
-		// runs query
-		if (!strcmp(prompt, "run"))
-		{
-			resolve_query(rule_graph, facts_list, query_list);
-			free(prompt);
-			continue;
-		}
+	// 	// runs query
+	// 	if (!strcmp(prompt, "run"))
+	// 	{
+	// 		resolve_query(rule_graph, facts_list, query_list);
+	// 		free(prompt);
+	// 		continue;
+	// 	}
 
-		// any other command
-		printf("Command %s not found. type 'help' to list commands\n", prompt);
+	// 	// any other command
+	// 	printf("Command %s not found. type 'help' to list commands\n", prompt);
 
-		free(prompt);
-	}
+	// 	free(prompt);
+	// }
 
 	free_rulegraph(rule_graph);
 	free(facts_list);
