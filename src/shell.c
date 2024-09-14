@@ -1,4 +1,7 @@
+#include "ft_macros.h"
+
 #include <stdio.h>
+#include <string.h>
 
 void print_banner()
 {
@@ -30,4 +33,17 @@ ls	Prints rules, current query and facts\n\
 clear	Clears the terminal\n\
 help	Prints this message\n\n\
 ");
+}
+
+char* expand_indent_new(char *indent)
+{
+      char *indent_res = calloc(INDENT_SIZE, 1);
+      memcpy(indent_res, indent, INDENT_SIZE);
+
+      indent_res[strlen(indent_res)] = ' ';
+      indent_res[strlen(indent_res)] = ' ';
+      indent_res[strlen(indent_res)] = ' ';
+      indent_res[strlen(indent_res)] = ' ';
+
+      return indent_res;
 }

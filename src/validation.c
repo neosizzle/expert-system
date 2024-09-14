@@ -16,6 +16,9 @@ int is_upper_and_nl(char *str)
 {
 	for (int i = 0; str[i]; i++)
 	{
+		if (str[i] == ' ')
+			continue;
+			
 		if (i == (strlen(str) - 1))
 		{
 			if (str[i] == '\n')

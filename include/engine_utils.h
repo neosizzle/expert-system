@@ -65,7 +65,7 @@ void store_results_in_cache(
 int list_len_neg_1(int *list);
 void print_list_endl(int *list);
 void add_ignore_list(Rule **list, Rule *rule);
-void remove_ignore_list(Rule **list, Rule *rule);
+void remove_ignore_list(Rule **list, Rule *rule, char* indent);
 void res_deduper(int *permutation_results);
 
 #endif  //!__ENGINE_UTILS__H__

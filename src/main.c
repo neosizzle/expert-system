@@ -373,116 +373,116 @@ int main(int argc, char *argv[])
     #endif
 
 	// busy spin
-	// while (1)
-	// {
-	// 	// prompt for fact change
-	// 	write(1, "# ", 2);
-	// 	char *prompt = get_next_line(0);
-	// 	prompt[strlen(prompt) - 1] = 0;
+	while (1)
+	{
+		// prompt for fact change
+		write(1, "# ", 2);
+		char *prompt = get_next_line(0);
+		prompt[strlen(prompt) - 1] = 0;
 
-	// 	// exit prompt
-	// 	if (!strcmp(prompt, "exit"))
-	// 	{
-	// 		free(prompt);
-	// 		break;
-	// 	}
+		// exit prompt
+		if (!strcmp(prompt, "exit"))
+		{
+			free(prompt);
+			break;
+		}
 
-	// 	// clear screen
-	// 	if (!strcmp(prompt, "clear"))
-	// 	{
-    // 		system("clear");
-	// 		free(prompt);
-	// 		continue;
-	// 	}
+		// clear screen
+		if (!strcmp(prompt, "clear"))
+		{
+    		system("clear");
+			free(prompt);
+			continue;
+		}
 
-	// 	// help
-	// 	if (!strcmp(prompt, "help"))
-	// 	{
-    // 		print_help();
-	// 		free(prompt);
-	// 		continue;
-	// 	}
+		// help
+		if (!strcmp(prompt, "help"))
+		{
+    		print_help();
+			free(prompt);
+			continue;
+		}
 
 
-	// 	// change fact
-	// 	if (!strcmp(prompt, "fact"))
-	// 	{
-	// 		printf("\n");
-	// 		while (1)
-	// 		{
-	// 			write(1, "fact# ", 6);
-	// 			char *fact_prompt = get_next_line(0);
-	// 			fact_prompt[strlen(fact_prompt) - 1] = 0;
-	// 			if (strlen(fact_prompt) < ALPHA_COUNT && is_upper(fact_prompt))
-	// 			{
-	// 				memset(facts_list, 0, ALPHA_COUNT);
-	// 				memcpy(facts_list, fact_prompt, strlen(fact_prompt));
-	// 				update_rule_graph_with_facts(rule_graph, facts_list);
-	// 				printf("fact updated %s\n", facts_list);
-	// 				free(fact_prompt);
-	// 				break;
-	// 			}
-	// 			else {
-	// 				printf("Fact invalid \n");
-	// 			}
+		// change fact
+		if (!strcmp(prompt, "fact"))
+		{
+			printf("\n");
+			while (1)
+			{
+				write(1, "fact# ", 6);
+				char *fact_prompt = get_next_line(0);
+				fact_prompt[strlen(fact_prompt) - 1] = 0;
+				if (strlen(fact_prompt) < ALPHA_COUNT && is_upper(fact_prompt))
+				{
+					memset(facts_list, 0, ALPHA_COUNT);
+					memcpy(facts_list, fact_prompt, strlen(fact_prompt));
+					update_rule_graph_with_facts(rule_graph, facts_list);
+					printf("fact updated %s\n", facts_list);
+					free(fact_prompt);
+					break;
+				}
+				else {
+					printf("Fact invalid \n");
+				}
 
-	// 			free(fact_prompt);
-	// 		}
-	// 		free(prompt);
-	// 		continue;
-	// 	}
+				free(fact_prompt);
+			}
+			free(prompt);
+			continue;
+		}
 
-	// 	// change query
-	// 	if (!strcmp(prompt, "query"))
-	// 	{
-	// 		printf("\n");
-	// 		while (1)
-	// 		{
-	// 			write(1, "query# ", 7);
-	// 			char *query_prompt = get_next_line(0);
-	// 			query_prompt[strlen(query_prompt) - 1] = 0;
-	// 			if (strlen(query_prompt) < ALPHA_COUNT && is_upper(query_prompt))
-	// 			{
-	// 				memset(query_list, 0, ALPHA_COUNT);
-	// 				memcpy(query_list, query_prompt, strlen(query_prompt));
-	// 				update_rule_graph_with_facts(rule_graph, query_list);
-	// 				printf("query updated %s\n", query_list);
-	// 				free(query_prompt);
-	// 				break;
-	// 			}
-	// 			else {
-	// 				printf("Query invalid \n");
-	// 			}
+		// change query
+		if (!strcmp(prompt, "query"))
+		{
+			printf("\n");
+			while (1)
+			{
+				write(1, "query# ", 7);
+				char *query_prompt = get_next_line(0);
+				query_prompt[strlen(query_prompt) - 1] = 0;
+				if (strlen(query_prompt) < ALPHA_COUNT && is_upper(query_prompt))
+				{
+					memset(query_list, 0, ALPHA_COUNT);
+					memcpy(query_list, query_prompt, strlen(query_prompt));
+					update_rule_graph_with_facts(rule_graph, query_list);
+					printf("query updated %s\n", query_list);
+					free(query_prompt);
+					break;
+				}
+				else {
+					printf("Query invalid \n");
+				}
 
-	// 			free(query_prompt);
-	// 		}
-	// 		free(prompt);
-	// 		continue;
-	// 	}
+				free(query_prompt);
+			}
+			free(prompt);
+			continue;
+		}
 
-	// 	// ls
-	// 	if (!strcmp(prompt, "ls"))
-	// 	{
-	// 		print_rulegraph(rule_graph);
-	// 		printf("\nQuery: %s\n", query_list);
-	// 		printf("Facts: %s\n", facts_list);
-	// 		free(prompt);
-	// 		continue;
-	// 	}
+		// ls
+		if (!strcmp(prompt, "ls"))
+		{
+			print_rulegraph(rule_graph);
+			printf("\nQuery: %s\n", query_list);
+			printf("Facts: %s\n", facts_list);
+			free(prompt);
+			continue;
+		}
 
-	// 	// runs query
-	// 	if (!strcmp(prompt, "run"))
-	// 	{
-	// 		resolve_query(rule_graph, facts_list, query_list);
-	// 		free(prompt);
-	// 		continue;
-	// 	}
+		// runs query
+		if (!strcmp(prompt, "run"))
+		{
+			resolve_query(rule_graph, facts_list, query_list);
+			free(prompt);
+			continue;
+		}
 
-	// 	// any other command
-	// 	printf("Command %s not found. type 'help' to list commands\n", prompt);
+		// any other command
+		printf("Command %s not found. type 'help' to list commands\n", prompt);
 
-	// 	free(prompt);
-	// }
+		free(prompt);
+	}
 
 	free_rulegraph(rule_graph);
 	free(facts_list);

@@ -30,10 +30,10 @@ void add_ignore_list(Rule **list, Rule *rule)
 	list[i] = rule;
 }
 
-void remove_ignore_list(Rule **list, Rule *rule)
+void remove_ignore_list(Rule **list, Rule *rule, char* indent)
 {
 	char *rule_str = serialize_symbols(rule->symbol_list);
-	printf("[remove_ignore_list] removing %s\n", rule_str);
+	DBG(indent, "[remove_ignore_list] removing %s\n", rule_str)
 	int i = -1;
 	while (list[++i])
 	{
