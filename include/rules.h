@@ -56,6 +56,7 @@ typedef struct Rulegraph
 Symbol *generate_symbol_from(char* str, int is_inner, Symbol** inner_symbols);
 void free_symbol(Symbol *symbol);
 void free_symbol_list(Symbol **symbols);
+void free_rule_list(Rule **rules);
 char *serialize_symbols(Symbol** symbols);
 
 Rule* search_for_rule(Rulegraph* rg, char* input_symbols, int is_lhs);

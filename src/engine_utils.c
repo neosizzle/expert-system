@@ -50,11 +50,7 @@ void remove_ignore_list(Rule **list, Rule *rule, char* indent)
 		++i;
 	}
 	
-	// i = -1;
-	// while (list[++i])
-	// {
-	// 	printf("[remove_key_heap] keyheap is now %p\n", list[i]);
-	// }
+	free(rule_str);
 }
 
 // solve a boolean equation value Operator value
@@ -308,6 +304,7 @@ int *resolve_truth_permutations(
 		Symbol **operators_copy = (Symbol **)calloc(MAX_VALUES, sizeof(Symbol *)); // shh.. hardallocate here
 		memcpy(operators_copy, operators, MAX_VALUES * sizeof(Symbol *));
 		res[++res_idx] = triple_take_premutation_resolve(values, operators_copy);
+		free_symbol_list(operators_copy);
 		// printf("res is %d\n", triple_take_premutation_resolve(values, operators_copy));
 		
 	}
@@ -367,16 +364,13 @@ Symbol** generate_mapping_for_truth_table(Symbol **list)
 		// not found, add in cache, append to res and continue`
 		if (!found_in_cache)
 		{
-			Symbol* new_symbol = (Symbol *)calloc(1, sizeof(Symbol));
-			memcpy(new_symbol, list[i], sizeof(Symbol));
-
 			if (cache_idx >= MAX_VALUES)
 			{
-				free_symbol(new_symbol);
+				// free_symbol(new_symbol);
 				DIE(1, "[unique_symbols] cache idx overflow")
 			}
-			cache[cache_idx] = strdup(new_symbol->str_repr);
-			res[++res_idx] = new_symbol;
+			cache[cache_idx] = strdup(list[i]->str_repr);
+			res[++res_idx] = list[i];
 		}
 
 	}
@@ -531,16 +525,24 @@ int *filter_tt_for_resolve_for_symbol(
 
 				if (symbol->type != VARIABLE && symbol->type != INNER && symbol->type != FACT)
 					++actual_symbol_idx_offset;
+				if (symbol->type == INNER && to_map->type == INNER)
+				{
+					char *list_serialized = serialize_symbols(symbol->inner_symbols);
+					char *to_map_serialized = serialize_symbols(to_map->inner_symbols);
+					if (!strcmp(list_serialized, to_map_serialized))
+					{
+						free(list_serialized);
+						free(to_map_serialized);
+						break;
+					}
+				}
 				if (!strcmp(symbol->str_repr, to_map->str_repr))
 					break;
 			}
 			
 			// after get index, obtain result list of that symbol
+			// Note: assumes actual_symbol_idx is always correct, else we will get -1 or 0 here
 			int *actual_symbol_results = rhs_symbols_res[actual_symbol_idx]; // dont need offset or else read null memory?
-			// for (size_t i = 0; i < MAX_VALUES && actual_symbol_results[i] != -1; i++)
-			// {
-			// 	printf("[fttforsymbol] [%d] %d\n", i, actual_symbol_results[i]);
-			// }
 
 			// check if column value is in result list and initialize found flag
 			int found_flag = 0;
@@ -694,11 +696,23 @@ int *filter_tt_for_resolve_for_rule(
 
 				if (symbol->type != VARIABLE && symbol->type != INNER && symbol->type != FACT)
 					++actual_symbol_idx_offset;
+				if (symbol->type == INNER && to_map->type == INNER)
+				{
+					char *list_serialized = serialize_symbols(symbol->inner_symbols);
+					char *to_map_serialized = serialize_symbols(to_map->inner_symbols);
+					if (!strcmp(list_serialized, to_map_serialized))
+					{
+						free(list_serialized);
+						free(to_map_serialized);
+						break;
+					}
+				}
 				if (!strcmp(symbol->str_repr, to_map->str_repr))
 					break;
 			}
 			
 			// after get index, obtain result list of that symbol
+			// Note: assumes actual_symbol_idx is always correct, else we will get -1 or 0 here
 			int *actual_symbol_results = rhs_symbols_res[actual_symbol_idx];
 			// printf("[filter_tt_for_resolve_for_rule] actual_symbol_results %p, idx %d\n", actual_symbol_results, actual_symbol_idx - actual_symbol_idx_offset);
 
@@ -775,6 +789,8 @@ void apply_filters(
 		perm_results[i] = -1;
 	for (size_t i = 0; new_perm_results[i] != -1; i++)
 		perm_results[i] = new_perm_results[i];
+	free(new_table);
+	free(new_perm_results);
 }
 
 // function that record mapping symbols to cache

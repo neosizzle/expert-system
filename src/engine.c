@@ -78,24 +78,13 @@ int *resolve_for_symbol(
 	// check facts first
 	if (symbol->type == FACT)
 	{
-		free(rules_to_resolve);
+		free_rule_list(rules_to_resolve);
 		DBG(indent, "[resolve_for_symbol] [%s] %s is found in facts, is_negated? %d\n", symbol->str_repr, symbol->str_repr, symbol->is_negated);
 		res[0] = 1;
 		if (symbol->is_negated)
 			res[0] = 0;
 		return res;
 	}
-	// char *symbol_key = symbol->str_repr;
-	// if (symbol->is_negated)
- 	//    symbol_key += 1;
-	// if (strstr(facts, symbol_key))
-	// {
-	// 	DBG(indent, "%s is found in facts\n", symbol_key);
-	// 	if (symbol->is_negated)
-	// 		res[0] = 0;
-	// 	res[0] = 1;
-	// 	// return res;
-	// }
 
 	char *symbol_key = symbol->str_repr;
 	if (symbol->is_negated)
@@ -106,11 +95,11 @@ int *resolve_for_symbol(
 	if (rule_ignore_list[0] != 0 && !strcmp(symbol_key, original_key))
 	{
 		DBG(indent, "[resolve_for_symbol] [%s] %s reentry, resolving to [0, 1]\n", symbol_key, symbol->str_repr);
-		int *curr_symbol_res = (int *)malloc(3 * sizeof(int));
-		curr_symbol_res[0] = 0;
-		curr_symbol_res[1] = 1;
-		curr_symbol_res[2] = -1;
-		return curr_symbol_res; 
+		free_rule_list(rules_to_resolve);
+		memset(res, -1, MAX_VALUES);
+		res[0] = 0;
+		res[1] = 1;
+		return res;
 	}
 
 	// check cache. If found, return here
@@ -121,7 +110,7 @@ int *resolve_for_symbol(
 		#ifdef  __DEBUG__
 		print_list_endl(cache_found);
 		#endif  //__DEBUG__
-		free(rules_to_resolve);
+		free_rule_list(rules_to_resolve);
 		free(res);
 		
 		return cache_found;
@@ -184,6 +173,8 @@ int *resolve_for_symbol(
 
 				rhs_symbols_res[idx_for_inner_symbol] = inner_res;
 			}
+			free(inner_symbols_indices);
+			free_symbol_list(inner_symbols);
 			
 			// iterate through rhs symbols
 			for (size_t k = 0; rhs_symbols[k]; k++)
@@ -191,7 +182,11 @@ int *resolve_for_symbol(
 				Symbol *curr_rhs_symbol = rhs_symbols[k];
 				
 				if (curr_rhs_symbol->type == INNER || curr_rhs_symbol->type == OPERATOR)
+				{
+					if (curr_rhs_symbol->type == OPERATOR)
+						rhs_symbols_res[k] = (int *)-1;
 					continue;
+				}
 				
 				// call resolve_for_symbol() for current symbol and save them in rhs_symbols_res
 				// howver, if the current symbol is the symbol that we are tring to solve, put [0, 1, -1] as a placeholder
@@ -280,9 +275,26 @@ int *resolve_for_symbol(
 				cache
 			);
 
+			for (size_t i = 0; table[i]; i++)
+				free(table[i]);
+			free(table);
+			free(aux);
+			free(mapping);
+			free(permutation_results);
+			free(table_indices_to_keep);
+
 			// TODO free all stuff here
+			for (size_t i = 0; rhs_symbols_res[i]; i++)
+			{
+				if (rhs_symbols_res[i] == (int*)-1)
+					continue;
+				free(rhs_symbols_res[i]);
+			}
+			
 			free(rhs_symbols_res);
 		}
+
+		free(curr_rule_res);
 		free(rule_str);
 
 		// remove rule from ignorelist
@@ -313,6 +325,8 @@ int *resolve_for_symbol(
 		res[0] = 1;
 	else
 		res[0] = 0;
+
+	free(rules_to_resolve);
 	return res;
 }
 
@@ -345,6 +359,8 @@ int *resolve_for_rule(
 
 		rhs_symbols_res[idx_for_inner_symbol] = inner_res;
 	}
+	free(inner_symbols_indices);
+	free(inner_symbols);
 
 	// iterate symbols in rules
 	for (size_t i = 0; rule->symbol_list[i]; i++)
@@ -352,7 +368,11 @@ int *resolve_for_rule(
 		Symbol *curr_symbol = rule->symbol_list[i];
 
 		if (curr_symbol->type == INNER || curr_symbol->type == OPERATOR)
+		{
+			if (curr_symbol->type == OPERATOR)
+				rhs_symbols_res[i] = (int *)-1;
 			continue;
+		}
 
 		// TODO circular check
 		DBG(indent, "[resolve_for_rule] resolving symbol %s\n", curr_symbol->str_repr);
@@ -439,6 +459,21 @@ int *resolve_for_rule(
 	res_deduper(permutation_results);
 	
 	// TODO free all stuff here
+	for (size_t i = 0; rhs_symbols_res[i]; i++)
+	{
+		if (rhs_symbols_res[i] == (int *)-1)
+			continue;
+		free(rhs_symbols_res[i]);
+	}
+	free(rhs_symbols_res);
+
+	for (size_t i = 0; table[i]; i++)
+		free(table[i]);
+	free(table);
+
+	free(aux);
+	free(mapping);
+	free(table_indices_to_keep);
 	free(rule_str);
 
 	return permutation_results;
@@ -470,6 +505,8 @@ int *resolve_for_inner(
 
 		symbols_res[idx_for_inner_symbol] = inner_res;
 	}
+	free_symbol_list(_inner_symbols);
+	free(inner_symbols_indices);
 
 	// iterate through rhs symbols
 	for (size_t k = 0; symbols[k]; k++)
@@ -477,7 +514,11 @@ int *resolve_for_inner(
 		Symbol *curr_rhs_symbol = symbols[k];
 		
 		if (curr_rhs_symbol->type == INNER || curr_rhs_symbol->type == OPERATOR)
+		{
+			if (curr_rhs_symbol->type == OPERATOR)
+				symbols_res[k] = (int *)-1;
 			continue;
+		}
 		
 		char *symbol_key = curr_rhs_symbol->str_repr;
 		if (curr_rhs_symbol->is_negated)
@@ -486,21 +527,14 @@ int *resolve_for_inner(
 		// call resolve_for_symbol() for current symbol and save them in symbols_res
 		// howver, if the current symbol is the symbol that we are tring to solve, put [0, 1, -1] as a placeholder
 		DBG(indent, "[resolve_for_inner] [%s] resolving RHS symbol %s\n", symbol_key, curr_rhs_symbol->str_repr);
-		int *curr_symbol_res = resolve_for_symbol(rg, curr_rhs_symbol, facts, cache, original_key, rule_ignore_list, level, indent);
+		char *tmp_indent = expand_indent_new(indent);
+		int *curr_symbol_res = resolve_for_symbol(rg, curr_rhs_symbol, facts, cache, original_key, rule_ignore_list, level, tmp_indent);
+		free(tmp_indent);
 		DBG(indent, "[resolve_for_inner] [%s] RHS symbol %s resolved to: ", symbol_key, curr_rhs_symbol->str_repr);
+		#ifdef  __DEBUG__
 		print_list_endl(curr_symbol_res);
+		#endif  //_
 
-		// if current symbol is negated, apply negation on the results
-		// if (inner_symbol->is_negated)
-		// {
-		// 	for (size_t l = 0; curr_symbol_res[l] > -1; l++)
-		// 	{
-		// 		if (curr_symbol_res[l] == 1)
-		// 			curr_symbol_res[l] = 0;
-		// 		else
-		// 			curr_symbol_res[l] = 1;
-		// 	}
-		// }
 		symbols_res[k] = curr_symbol_res;
 	}
 
@@ -554,6 +588,25 @@ int *resolve_for_inner(
 	#ifdef  __DEBUG__
 	print_list_endl(permutation_results);
 	#endif  //_
+
+	for (size_t i = 0; table[i]; i++)
+		free(table[i]);
+	free(table);
+
+	for (size_t i = 0; symbols_res[i]; i++)
+	{
+		if (symbols_res[i] == (int*)-1)
+			continue;
+		free(symbols_res[i]);
+	}
+	
+	free(symbols_res);
+
+
+	free(aux);
+	free(mapping);
+	free(table_indices_to_keep);
+
 	return permutation_results;
 }
 
