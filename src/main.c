@@ -136,7 +136,7 @@ Symbol **parse_expression(char *line)
 			// parsing error
 			if (!new_symbol)
 			{
-				EPRINTF("[parse_expression], invalid parenthesis, got %s\n", line);
+				EPRINTF("[parse_expression] parsing error at %s\n", line);
 				free(linedup);
 				free_symbol_list(res);
 				return 0;

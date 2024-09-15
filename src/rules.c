@@ -39,6 +39,12 @@ Symbol *generate_symbol_from(char *str, int is_inner, Symbol **inner_symbols)
 		// check for operator
 		if (strcspn(str, "+^|") < strlen(str))
 		{
+			if (strlen(str) != 1)
+			{
+				EPRINTF("[generate_symbol_from] Invalid operator length %s\n", str);
+				free_symbol(res);
+				return 0;
+			}
 			res->type = OPERATOR;
 			if (strcspn(str, "+") < strlen(str))
 				res->operator= AND;
