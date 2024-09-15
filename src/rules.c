@@ -12,7 +12,6 @@ Symbol *generate_symbol_from(char *str, int is_inner, Symbol **inner_symbols)
 {
 	Symbol *res = (Symbol *)malloc(sizeof(Symbol));
 	
-	res->possible_results = (int *)calloc(MAX_POSSIBLE_RESULTS, sizeof(int));// shh.. hard allocate here
 	res->is_negated = 0;
 	res->inner_symbols = 0;
 	res->str_repr = 0;
@@ -105,8 +104,6 @@ void free_symbol(Symbol *symbol)
 {
 	if (symbol->inner_symbols)
 		free_symbol_list(symbol->inner_symbols); 
-	if (symbol->possible_results)
-		free(symbol->possible_results);
 	if (symbol->str_repr)
 		free(symbol->str_repr);
 	free(symbol);
@@ -191,7 +188,6 @@ Rule *generate_rule_from(Symbol **symbol_list)
 {
 	Rule *res = (Rule *)calloc(1, sizeof(Rule));
 	res->symbol_list = symbol_list;
-	res->confirmed_result = 0;
 	res->iff = NULL;
 	res->implies = NULL;
 	res->resolve_type = NO_RESOLVE;
@@ -206,14 +202,10 @@ int update_symbol_with_facts(Symbol *symbol, char *facts)
 	if (symbol->type == VARIABLE || symbol->type == FACT)
 	{
 		int char_idx = 0;
-		bzero(symbol->possible_results, sizeof(int) * MAX_POSSIBLE_RESULTS);
 		if (symbol->is_negated)
 			char_idx = 1;
 		if (strcspn(facts, &(symbol->str_repr[char_idx])) != strlen(facts))
-		{
-			symbol->possible_results[0] = FT_TRUE;
 			symbol->type = FACT;
-		}
 		else
 			symbol->type = VARIABLE;
 

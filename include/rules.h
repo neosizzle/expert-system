@@ -34,14 +34,11 @@ typedef struct Symbol
 	struct Symbol** inner_symbols;
 	int is_negated;
 	char* str_repr;
-	int *possible_results;
 } Symbol;
 
 typedef struct Rule
 {
 	Symbol** symbol_list;
-	int confirmed_result;
-	int ref_cnt; // used for freeing
 	ResolveType resolve_type;
 	struct Rule* implies;
 	struct Rule* iff;
