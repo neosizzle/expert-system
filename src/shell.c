@@ -5,7 +5,7 @@
 
 void print_banner()
 {
-	char *banner = "                            _     \n\
+      char *banner = "                            _     \n\
                            | |    \n\
    _____  ___ __   ___ _ __| |_   \n\
   / _ \\ \\/ / '_ \\ / _ \\ '__| __|  \n\
@@ -19,12 +19,12 @@ void print_banner()
        __/ |                      \n\
       |___/                       \n";
 
-	printf("%s", banner);
+      printf("%s", banner);
 }
 
 void print_help()
 {
-	printf("\nexpertsystem - Simple inference engine\n\n\
+      printf("\nexpertsystem - Simple inference engine\n\n\
 exit	Exits the program\n\
 run	Executes the engine with configured facts and query\n\
 query	Changes the query\n\
@@ -35,7 +35,7 @@ help	Prints this message\n\n\
 ");
 }
 
-char* expand_indent_new(char *indent)
+char *expand_indent_new(char *indent)
 {
       char *indent_res = calloc(INDENT_SIZE, 1);
       memcpy(indent_res, indent, INDENT_SIZE);

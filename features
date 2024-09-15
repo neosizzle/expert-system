@@ -33,13 +33,4 @@ resolve_for_symbol -> int* results
 			- save valid values in cache, overwrite result values if they have smaller length than the ones in cache (multi rule)
 	- return the value in cache (remember to negate)
 
-			 
 
-
-resolve_for_rule -> int *results
-	- iterate the symbols in rules 
-		- resolve_for_symbol(curr_symbol) -> should return list of possible values for this symbol and save the result somewhere
-	- generate truth table
-	- resolve truth table
-	- filter truth table to contain values for saved symbol results
-	- return the remaining unfiltered results.

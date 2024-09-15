@@ -9,7 +9,9 @@
 int list_len_neg_1(int *list)
 {
 	int res = -1;
-	while (list[++res] != -1){}
+	while (list[++res] != -1)
+	{
+	}
 	return res;
 }
 
@@ -17,7 +19,8 @@ void print_list_endl(int *list)
 {
 	int i = -1;
 	printf("[");
-	while (list[++i] != -1){
+	while (list[++i] != -1)
+	{
 		printf("%d, ", list[i]);
 	}
 	printf("]\n");
@@ -26,11 +29,13 @@ void print_list_endl(int *list)
 void add_ignore_list(Rule **list, Rule *rule)
 {
 	int i = -1;
-	while (list[++i]){}
+	while (list[++i])
+	{
+	}
 	list[i] = rule;
 }
 
-void remove_ignore_list(Rule **list, Rule *rule, char* indent)
+void remove_ignore_list(Rule **list, Rule *rule, char *indent)
 {
 	char *rule_str = serialize_symbols(rule->symbol_list);
 	DBG(indent, "[remove_ignore_list] removing %s\n", rule_str)
@@ -40,7 +45,7 @@ void remove_ignore_list(Rule **list, Rule *rule, char* indent)
 		if (list[i] == rule)
 			break;
 	}
-	
+
 	list[i] = 0;
 	// NOTE: assume no double clear, list always have symbol_key
 	while (list[i])
@@ -49,13 +54,13 @@ void remove_ignore_list(Rule **list, Rule *rule, char* indent)
 		list[i] = next_elem;
 		++i;
 	}
-	
+
 	free(rule_str);
 }
 
 // solve a boolean equation value Operator value
 // expects both symbols to have define values
-int solve_bool_pair(int lhs, Symbol* operator, int rhs)
+int solve_bool_pair(int lhs, Symbol *operator, int rhs)
 {
 	// validations
 	// if (lhs->type != VARIABLE && lhs->type != FACT)
@@ -78,7 +83,7 @@ int solve_bool_pair(int lhs, Symbol* operator, int rhs)
 	// 	DIE(1, "[solve_bool_pair] rhs symbol is unresolved \n");
 	// }
 
-	if (operator->type != OPERATOR || operator->operator == NOP)
+	if (operator->type != OPERATOR || operator->operator== NOP)
 	{
 		DIE(1, "[solve_bool_pair] operator is invalid\n");
 	}
@@ -86,11 +91,11 @@ int solve_bool_pair(int lhs, Symbol* operator, int rhs)
 	// int lhs_res = (lhs->possible_results[0] == FT_TRUE)? 1 : 0;
 	// int rhs_res = (rhs->possible_results[0] == FT_TRUE)? 1 : 0;
 
-	if (operator->operator == AND)
+	if (operator->operator== AND)
 		return lhs & rhs;
-	if (operator->operator == OR)
+	if (operator->operator== OR)
 		return lhs | rhs;
-	if (operator->operator == XOR)
+	if (operator->operator== XOR)
 		return lhs ^ rhs;
 }
 
@@ -101,8 +106,7 @@ void generate_truth_permutations(
 	int num_elems,
 	int *curr_table_y,
 	int curr_aux_x,
-	int *aux
-)
+	int *aux)
 {
 	for (size_t curr_bit = 0; curr_bit < 2; curr_bit++)
 	{
@@ -115,7 +119,7 @@ void generate_truth_permutations(
 			// copy the aux buffer into tables[curr_table_y]
 			for (size_t i = 0; i < num_elems; i++)
 				table[*curr_table_y][i] = aux[i];
-			
+
 			// increment curr_table_y after 1 copy
 			*curr_table_y = *curr_table_y + 1;
 
@@ -128,8 +132,7 @@ void generate_truth_permutations(
 			num_elems,
 			curr_table_y,
 			curr_aux_x + 1,
-			aux
-		);
+			aux);
 	}
 }
 
@@ -137,8 +140,7 @@ void generate_truth_permutations(
 // this will modify int *values and Symbol** operators
 static int triple_take_premutation_resolve(
 	int *values,
-	Symbol **operators
-)
+	Symbol **operators)
 {
 	Operator operator_prio[3] = {AND, OR, XOR};
 	for (size_t i = 0; i < 3; i++)
@@ -146,16 +148,16 @@ static int triple_take_premutation_resolve(
 		Operator operator_to_run = operator_prio[i];
 		int window_idx = 0;
 		int operator_idx = -1;
-		
+
 		while (operators[++operator_idx])
 		{
-			Symbol *operator = operators[operator_idx];
+			Symbol *operator= operators[operator_idx];
 			int lhs = values[window_idx];
 			int rhs = values[++window_idx];
 
-			if (operator->operator != operator_to_run)
+			if (operator->operator!= operator_to_run)
 				continue;
-			
+
 			if (rhs == -1)
 			{
 				DIE(1, "[triple_take_premutation_resolve] First run invalid RHS\n");
@@ -181,7 +183,6 @@ static int triple_take_premutation_resolve(
 
 			window_idx = 0;
 			operator_idx = -1;
-
 		}
 	}
 
@@ -237,11 +238,10 @@ static int triple_take_premutation_resolve(
 // the return value of this function can be used for further filtering
 // NOTE: C and !C should be considered different here
 int *resolve_truth_permutations(
-	Symbol** mapping,
+	Symbol **mapping,
 	int **table,
 	int table_row_count,
-	Symbol **symbols
-)
+	Symbol **symbols)
 {
 	// generate array of values to be resolved
 	int *values = (int *)malloc(MAX_VALUES * sizeof(int)); // shh.. hardallocate here
@@ -256,10 +256,10 @@ int *resolve_truth_permutations(
 
 		if (symbol->type != OPERATOR)
 			continue;
-		
+
 		operators[++operator_idx] = symbol;
 	}
-	
+
 	int *res = (int *)malloc(MAX_VALUES * sizeof(int));
 	memset(res, -1, MAX_VALUES * sizeof(int));
 	int res_idx = -1;
@@ -305,17 +305,14 @@ int *resolve_truth_permutations(
 		memcpy(operators_copy, operators, MAX_VALUES * sizeof(Symbol *));
 		res[++res_idx] = triple_take_premutation_resolve(values, operators_copy);
 		free_symbol_list(operators_copy);
-		// printf("res is %d\n", triple_take_premutation_resolve(values, operators_copy));
-		
 	}
-
 
 	free(values);
 	free(operators);
 	return res;
 }
 
-Symbol** get_inner_symbols(Symbol **list, int *indices)
+Symbol **get_inner_symbols(Symbol **list, int *indices)
 {
 	Symbol **res = (Symbol **)calloc(MAX_VALUES, sizeof(Symbol *));
 	int j = -1;
@@ -328,26 +325,25 @@ Symbol** get_inner_symbols(Symbol **list, int *indices)
 			indices[++k] = i;
 		}
 	}
-	
 
 	return res;
 }
 
 // self explanatory
-Symbol** generate_mapping_for_truth_table(Symbol **list)
+Symbol **generate_mapping_for_truth_table(Symbol **list)
 {
-	Symbol** res =  (Symbol **)calloc(MAX_VALUES, sizeof(Symbol *)); // shh.. hard allocate here
+	Symbol **res = (Symbol **)calloc(MAX_VALUES, sizeof(Symbol *)); // shh.. hard allocate here
 
 	char **cache = (char **)calloc(MAX_VALUES, sizeof(char *)); // shh.. hard allocate here
 
 	int res_idx = -1;
 	// iterate the list of symbols
-	for (size_t i = 0; list[i] ; i++)
+	for (size_t i = 0; list[i]; i++)
 	{
 		if (list[i]->type != VARIABLE && list[i]->type != FACT && list[i]->type != INNER)
 			continue;
-		
-		char *key = list[i]->str_repr;	
+
+		char *key = list[i]->str_repr;
 		int found_in_cache = 0;
 		int cache_idx = -1;
 
@@ -372,16 +368,15 @@ Symbol** generate_mapping_for_truth_table(Symbol **list)
 			cache[cache_idx] = strdup(list[i]->str_repr);
 			res[++res_idx] = list[i];
 		}
-
 	}
-	
+
 	// free cache
 	for (size_t i = 0; i < MAX_VALUES; i++)
 	{
 		if (cache[i])
 			free(cache[i]);
 	}
-	
+
 	free(cache);
 	return res;
 }
@@ -394,12 +389,12 @@ int unique_symbols(Symbol **list)
 	char **cache = (char **)calloc(MAX_VALUES, sizeof(char *));
 
 	// iterate the list of symbols
-	for (size_t i = 0; list[i] ; i++)
+	for (size_t i = 0; list[i]; i++)
 	{
 		if (list[i]->type != VARIABLE && list[i]->type != FACT && list[i]->type != INNER)
 			continue;
-		
-		char *key = list[i]->str_repr;	
+
+		char *key = list[i]->str_repr;
 		int found_in_cache = 0;
 		int cache_idx = -1;
 
@@ -423,16 +418,15 @@ int unique_symbols(Symbol **list)
 			}
 			cache[cache_idx] = strdup(list[i]->str_repr);
 		}
-
 	}
-	
+
 	// free cache
 	for (size_t i = 0; i < MAX_VALUES; i++)
 	{
 		if (cache[i])
 			free(cache[i]);
 	}
-	
+
 	free(cache);
 	return res;
 }
@@ -477,10 +471,9 @@ int *filter_tt_for_resolve_for_symbol(
 	int lhs_res,
 	int num_elems,
 	ResolveType resolve_type,
-	int rule_enforce
-)
+	int rule_enforce)
 {
-	int* res =  (int *)malloc(MAX_VALUES * sizeof(int)); // shh.. hard allocate here
+	int *res = (int *)malloc(MAX_VALUES * sizeof(int)); // shh.. hard allocate here
 	memset(res, -1, MAX_VALUES * sizeof(int));
 	int curr_idx = -1;
 	int res_idx = -1;
@@ -502,10 +495,11 @@ int *filter_tt_for_resolve_for_symbol(
 			if (curr_result != lhs_res)
 				continue;
 		}
-		else {
+		else
+		{
 			DIE(1, "[filter_tt_for_resolve_for_symbol] No resolve type here apparently :/\n")
 		}
-		
+
 		// filter truth table based to contain saved symbol results
 		// col by col
 		int *table_row = table[curr_idx];
@@ -521,7 +515,7 @@ int *filter_tt_for_resolve_for_symbol(
 			int actual_symbol_idx_offset = 0;
 			while (rhs_symbols[++actual_symbol_idx])
 			{
-				Symbol* symbol = rhs_symbols[actual_symbol_idx];
+				Symbol *symbol = rhs_symbols[actual_symbol_idx];
 
 				if (symbol->type != VARIABLE && symbol->type != INNER && symbol->type != FACT)
 					++actual_symbol_idx_offset;
@@ -539,7 +533,7 @@ int *filter_tt_for_resolve_for_symbol(
 				if (!strcmp(symbol->str_repr, to_map->str_repr))
 					break;
 			}
-			
+
 			// after get index, obtain result list of that symbol
 			// Note: assumes actual_symbol_idx is always correct, else we will get -1 or 0 here
 			int *actual_symbol_results = rhs_symbols_res[actual_symbol_idx]; // dont need offset or else read null memory?
@@ -552,7 +546,7 @@ int *filter_tt_for_resolve_for_symbol(
 				if (actual_symbol_results[i] == res_to_check)
 					++found_flag;
 			}
-			
+
 			// if no found_flag, set skip flag and break
 			if (!found_flag)
 			{
@@ -569,11 +563,11 @@ int *filter_tt_for_resolve_for_symbol(
 		// check skip flag. If yes, continue
 		if (skip_flag)
 			continue;
-		
+
 		// if no, add curr_idx to res[++res_idx];
 		res[++res_idx] = curr_idx;
 	}
-	
+
 	return res;
 }
 
@@ -583,10 +577,9 @@ int *filter_tt_for_resolve_for_inner(
 	Symbol **rhs_symbols,
 	Symbol **mapping,
 	int *perm_results,
-	int num_elems
-)
+	int num_elems)
 {
-	int* res =  (int *)malloc(MAX_VALUES * sizeof(int)); // shh.. hard allocate here
+	int *res = (int *)malloc(MAX_VALUES * sizeof(int)); // shh.. hard allocate here
 	memset(res, -1, MAX_VALUES * sizeof(int));
 	int curr_idx = -1;
 	int res_idx = -1;
@@ -595,7 +588,7 @@ int *filter_tt_for_resolve_for_inner(
 	{
 		int curr_result = perm_results[curr_idx];
 		int *curr_symbol_states = table[curr_idx];
-		
+
 		// filter truth table based to contain saved symbol results
 		// col by col
 		int *table_row = table[curr_idx];
@@ -611,14 +604,14 @@ int *filter_tt_for_resolve_for_inner(
 			int actual_symbol_idx_offset = 0;
 			while (rhs_symbols[++actual_symbol_idx])
 			{
-				Symbol* symbol = rhs_symbols[actual_symbol_idx];
+				Symbol *symbol = rhs_symbols[actual_symbol_idx];
 
 				if (symbol->type != VARIABLE && symbol->type != INNER && symbol->type != FACT)
 					++actual_symbol_idx_offset;
 				if (!strcmp(symbol->str_repr, to_map->str_repr))
 					break;
 			}
-			
+
 			// after get index, obtain result list of that symbol
 			int *actual_symbol_results = rhs_symbols_res[actual_symbol_idx]; // dont need offset or else read null memory?
 			// for (size_t i = 0; i < MAX_VALUES && actual_symbol_results[i] != -1; i++)
@@ -634,7 +627,7 @@ int *filter_tt_for_resolve_for_inner(
 				if (actual_symbol_results[i] == res_to_check)
 					++found_flag;
 			}
-			
+
 			// if no found_flag, set skip flag and break
 			if (!found_flag)
 			{
@@ -646,11 +639,11 @@ int *filter_tt_for_resolve_for_inner(
 		// check skip flag. If yes, continue
 		if (skip_flag)
 			continue;
-		
+
 		// if no, add curr_idx to res[++res_idx];
 		res[++res_idx] = curr_idx;
 	}
-	
+
 	return res;
 }
 
@@ -660,10 +653,9 @@ int *filter_tt_for_resolve_for_rule(
 	Symbol **rhs_symbols,
 	Symbol **mapping,
 	int *perm_results,
-	int num_elems
-)
+	int num_elems)
 {
-	int* res =  (int *)malloc(MAX_VALUES * sizeof(int)); // shh.. hard allocate here
+	int *res = (int *)malloc(MAX_VALUES * sizeof(int)); // shh.. hard allocate here
 	memset(res, -1, MAX_VALUES * sizeof(int));
 	int curr_idx = -1;
 	int res_idx = -1;
@@ -672,7 +664,7 @@ int *filter_tt_for_resolve_for_rule(
 	{
 		int curr_result = perm_results[curr_idx];
 		int *curr_symbol_states = table[curr_idx];
-		
+
 		// filter truth table based to contain saved symbol results
 		// col by col
 		int *table_row = table[curr_idx];
@@ -690,7 +682,7 @@ int *filter_tt_for_resolve_for_rule(
 			int actual_symbol_idx_offset = 0;
 			while (rhs_symbols[++actual_symbol_idx])
 			{
-				Symbol* symbol = rhs_symbols[actual_symbol_idx];
+				Symbol *symbol = rhs_symbols[actual_symbol_idx];
 
 				// printf("[filter_tt_for_resolve_for_rule] symbol->str_repr %s\n", symbol->str_repr);
 
@@ -710,11 +702,10 @@ int *filter_tt_for_resolve_for_rule(
 				if (!strcmp(symbol->str_repr, to_map->str_repr))
 					break;
 			}
-			
+
 			// after get index, obtain result list of that symbol
 			// Note: assumes actual_symbol_idx is always correct, else we will get -1 or 0 here
 			int *actual_symbol_results = rhs_symbols_res[actual_symbol_idx];
-			// printf("[filter_tt_for_resolve_for_rule] actual_symbol_results %p, idx %d\n", actual_symbol_results, actual_symbol_idx - actual_symbol_idx_offset);
 
 			// check if column value is in result list and initialize found flag
 			int found_flag = 0;
@@ -724,7 +715,7 @@ int *filter_tt_for_resolve_for_rule(
 				if (actual_symbol_results[i] == res_to_check)
 					++found_flag;
 			}
-			
+
 			// if no found_flag, set skip flag and break
 			if (!found_flag)
 			{
@@ -736,11 +727,11 @@ int *filter_tt_for_resolve_for_rule(
 		// check skip flag. If yes, continue
 		if (skip_flag)
 			continue;
-		
+
 		// if no, add curr_idx to res[++res_idx];
 		res[++res_idx] = curr_idx;
 	}
-	
+
 	return res;
 }
 
@@ -749,8 +740,7 @@ void apply_filters(
 	int **table,
 	int *perm_results,
 	int *indices_to_keep,
-	int number_of_rows
-)
+	int number_of_rows)
 {
 	// create new table and perm results
 	int **new_table = (int **)calloc(MAX_VALUES, sizeof(int *));
@@ -758,7 +748,7 @@ void apply_filters(
 	memset(new_perm_results, -1, MAX_VALUES * sizeof(int));
 	int perm_result_idx = -1;
 	int table_idx = -1;
-	
+
 	// iterate through indices to keep and copy original kept data into tabes but free removed items in table
 	for (size_t i = 0; indices_to_keep[i] != -1; i++)
 	{
@@ -783,7 +773,7 @@ void apply_filters(
 	}
 	for (size_t i = 0; new_table[i]; i++)
 		table[i] = new_table[i];
-	
+
 	// apply filter to perm results
 	for (size_t i = 0; i < number_of_rows; i++)
 		perm_results[i] = -1;
@@ -799,8 +789,8 @@ void apply_filters(
 void store_results_in_cache(
 	Symbol **mapping,
 	int **table,
-	FtMap* cache
-) {
+	FtMap *cache)
+{
 	int aux[MAX_VALUES]; // hard allocate
 	memset(aux, -1, sizeof(int) * MAX_VALUES);
 
@@ -832,19 +822,10 @@ void store_results_in_cache(
 			free(cache_found);
 		}
 		else
-		{
-			// printf("new entry to cahce %s \n", symbol_to_cache->str_repr);
-			// for (size_t i = 0; i < MAX_VALUES; i++)
-			// {
-			// 	printf("new aux[%d] %d\n", i, aux[i]);
-			// }
-			
 			insert_map(cache, symbol_to_cache, aux, MAX_VALUES); // NOTE: hardcoded length here
-		}
 		// reset aux
 		memset(aux, -1, MAX_VALUES * sizeof(int));
 	}
-	
 }
 
 void res_deduper(int *permutation_results)

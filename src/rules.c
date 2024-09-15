@@ -6,12 +6,12 @@
 #include <string.h>
 #include <stdio.h>
 
-# define MAX_POSSIBLE_RESULTS 16
+#define MAX_POSSIBLE_RESULTS 16
 
 Symbol *generate_symbol_from(char *str, int is_inner, Symbol **inner_symbols)
 {
 	Symbol *res = (Symbol *)malloc(sizeof(Symbol));
-	
+
 	res->is_negated = 0;
 	res->inner_symbols = 0;
 	res->str_repr = 0;
@@ -103,7 +103,7 @@ char *serialize_symbols(Symbol **symbols)
 void free_symbol(Symbol *symbol)
 {
 	if (symbol->inner_symbols)
-		free_symbol_list(symbol->inner_symbols); 
+		free_symbol_list(symbol->inner_symbols);
 	if (symbol->str_repr)
 		free(symbol->str_repr);
 	free(symbol);

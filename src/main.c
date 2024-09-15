@@ -56,7 +56,7 @@ Symbol **parse_expression(char *line)
 			free_symbol_list(res);
 			EPRINTF("Missing ')' at %s\n", line);
 			return 0;
-		}		
+		}
 
 		// extract the subscring and recurse to get the symbols inside the parenthesis
 		char *inner = strndup(line + i + 1, matching_rp);
@@ -94,8 +94,8 @@ Symbol **parse_expression(char *line)
 			// first '(' found, find symbol list to replace
 			if (pstack == 0)
 			{
-				Symbol *new_symbol =  generate_symbol_from(curr_token, 1, all_inner_symbols[inner_symbols_idx]);
-				
+				Symbol *new_symbol = generate_symbol_from(curr_token, 1, all_inner_symbols[inner_symbols_idx]);
+
 				// parsing error
 				if (!new_symbol)
 				{
@@ -131,8 +131,8 @@ Symbol **parse_expression(char *line)
 		// real symbol which is not in parenthesis now, parse it normally
 		if (pstack == 0)
 		{
-			Symbol *new_symbol =  generate_symbol_from(curr_token, 0, 0);
-				
+			Symbol *new_symbol = generate_symbol_from(curr_token, 0, 0);
+
 			// parsing error
 			if (!new_symbol)
 			{
@@ -141,7 +141,6 @@ Symbol **parse_expression(char *line)
 				free_symbol_list(res);
 				return 0;
 			}
-
 
 			res[res_idx] = new_symbol;
 			res_idx += 1;
@@ -157,7 +156,7 @@ Symbol **parse_expression(char *line)
 		free_symbol_list(res);
 		return 0;
 	}
-	
+
 	free(linedup);
 	return res;
 }
@@ -217,7 +216,7 @@ int parse_rule(char *line, Rulegraph *rule_graph)
 	// get the expressions for both sides
 	Symbol **lhs_symbols = parse_expression(lhs);
 	Symbol **rhs_symbols = parse_expression(rhs);
-	
+
 	// paarsing error check
 	if (!lhs_symbols || !rhs_symbols)
 	{
@@ -324,7 +323,7 @@ int parse_input_file(int fd, Rulegraph *rule_graph, char *query_list, char *fact
 		// else, parse rule
 		else
 		{
-			if (parse_rule(line, rule_graph))			
+			if (parse_rule(line, rule_graph))
 				return 1;
 		}
 	}
@@ -366,11 +365,11 @@ int main(int argc, char *argv[])
 	print_rulegraph(rule_graph);
 	print_help();
 
-	#ifdef __DEBUG__
-        printf("__DEBUG__ DEFINED\n");
-	#else
-        printf("__DEBUG__ not defined\n");
-    #endif
+#ifdef __DEBUG__
+	printf("__DEBUG__ DEFINED\n");
+#else
+	printf("__DEBUG__ not defined\n");
+#endif
 
 	// busy spin
 	while (1)
@@ -390,7 +389,7 @@ int main(int argc, char *argv[])
 		// clear screen
 		if (!strcmp(prompt, "clear"))
 		{
-    		system("clear");
+			system("clear");
 			free(prompt);
 			continue;
 		}
@@ -398,11 +397,10 @@ int main(int argc, char *argv[])
 		// help
 		if (!strcmp(prompt, "help"))
 		{
-    		print_help();
+			print_help();
 			free(prompt);
 			continue;
 		}
-
 
 		// change fact
 		if (!strcmp(prompt, "fact"))
@@ -422,7 +420,8 @@ int main(int argc, char *argv[])
 					free(fact_prompt);
 					break;
 				}
-				else {
+				else
+				{
 					printf("Fact invalid \n");
 				}
 
@@ -450,7 +449,8 @@ int main(int argc, char *argv[])
 					free(query_prompt);
 					break;
 				}
-				else {
+				else
+				{
 					printf("Query invalid \n");
 				}
 

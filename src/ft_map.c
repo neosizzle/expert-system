@@ -67,13 +67,13 @@ int query_map_idx(FtMap *map, Symbol *symbol)
   char *key = symbol->str_repr;
   if (symbol->is_negated)
     key += 1;
-  
+
   for (size_t i = 0; i < map->len; i++)
   {
-    FtMapNode* pair = map->nodes[i];
+    FtMapNode *pair = map->nodes[i];
     if (strcmp(key, pair->symbol))
       continue;
-    
+
     return i;
   }
   return -1;
@@ -95,7 +95,8 @@ void insert_map(FtMap *map, Symbol *symbol, int *results, int result_len)
     free(map->nodes[found_results]->results);
     map->nodes[found_results]->results = new_values;
   }
-  else {
+  else
+  {
     FtMapNode *new_node = (FtMapNode *)calloc(1, sizeof(FtMapNode));
     int offset = 0;
     if (symbol->is_negated)
@@ -108,7 +109,6 @@ void insert_map(FtMap *map, Symbol *symbol, int *results, int result_len)
   }
 }
 
-
 // query map that also matches negate symbols
 int *query_map(FtMap *map, Symbol *symbol)
 {
@@ -116,13 +116,13 @@ int *query_map(FtMap *map, Symbol *symbol)
   char *key = symbol->str_repr;
   if (symbol->is_negated)
     key += 1;
-  
+
   for (size_t i = 0; i < map->len; i++)
   {
-    FtMapNode* pair = map->nodes[i];
+    FtMapNode *pair = map->nodes[i];
     if (strcmp(key, pair->symbol))
       continue;
-    
+
     res = (int *)malloc(VALUE_LIMIT * sizeof(int));
     memcpy(res, pair->results, VALUE_LIMIT * sizeof(int));
     break;

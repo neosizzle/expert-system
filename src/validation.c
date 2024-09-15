@@ -8,7 +8,7 @@ int is_upper(char *str)
 		if (str[i] < 'A' || str[i] > 'Z')
 			return 0;
 	}
-	
+
 	return 1;
 }
 
@@ -18,7 +18,7 @@ int is_upper_and_nl(char *str)
 	{
 		if (str[i] == ' ')
 			continue;
-			
+
 		if (i == (strlen(str) - 1))
 		{
 			if (str[i] == '\n')
@@ -28,11 +28,11 @@ int is_upper_and_nl(char *str)
 		if (str[i] < 'A' || str[i] > 'Z')
 			return 0;
 	}
-	
+
 	return 1;
 }
 
-int assign_resolver(char* rule, char **resolver, char **resolver_pos)
+int assign_resolver(char *rule, char **resolver, char **resolver_pos)
 {
 	if (*resolver_pos = strstr(rule, IMPL_RESOLVER))
 		*resolver = IMPL_RESOLVER;
@@ -57,7 +57,6 @@ int assign_resolver(char* rule, char **resolver, char **resolver_pos)
 	}
 
 	return 0;
-
 }
 
 int check_invalid_operators(Symbol **res, char *line)
@@ -79,7 +78,7 @@ int check_invalid_operators(Symbol **res, char *line)
 			if (check_invalid_operators(curr->inner_symbols, line) == -1)
 				return -1;
 		}
-		if ((curr->type == OPERATOR && res[i-1]->type == OPERATOR) || (curr->type == OPERATOR && res[i+1]->type == OPERATOR) )
+		if ((curr->type == OPERATOR && res[i - 1]->type == OPERATOR) || (curr->type == OPERATOR && res[i + 1]->type == OPERATOR))
 		{
 			EPRINTF("[check_invalid_operators], back to back operator placement, got %s\n", line);
 			return -1;

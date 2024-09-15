@@ -5,4 +5,4 @@ void print_banner();
 void print_help();
 char *expand_indent_new(char *indent);
 
-#endif  //!__SHELL__H__
+#endif //!__SHELL__H__

@@ -1,14 +1,16 @@
 #ifndef FT_MAP_H
-# define FT_MAP_H
+#define FT_MAP_H
 #include "rules.h"
-typedef struct FtMapNode {
-  char* symbol;
-  int* results;
+typedef struct FtMapNode
+{
+  char *symbol;
+  int *results;
 } FtMapNode;
 
-// heap allocated nodes with fixed capacity 
-typedef struct FtMap {
-  FtMapNode** nodes;
+// heap allocated nodes with fixed capacity
+typedef struct FtMap
+{
+  FtMapNode **nodes;
   int capacity;
   int len;
 } FtMap;

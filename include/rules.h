@@ -1,8 +1,8 @@
 #ifndef __RULES__H__
 #define __RULES__H__
 
-# define FT_TRUE 1
-# define FT_FALSE 0
+#define FT_TRUE 1
+#define FT_FALSE 0
 
 typedef enum SymbolType
 {
@@ -31,37 +31,37 @@ typedef struct Symbol
 {
 	SymbolType type;
 	Operator operator;
-	struct Symbol** inner_symbols;
+	struct Symbol **inner_symbols;
 	int is_negated;
-	char* str_repr;
+	char *str_repr;
 } Symbol;
 
 typedef struct Rule
 {
-	Symbol** symbol_list;
+	Symbol **symbol_list;
 	ResolveType resolve_type;
-	struct Rule* implies;
-	struct Rule* iff;
+	struct Rule *implies;
+	struct Rule *iff;
 } Rule;
 
-typedef struct Rulegraph 
+typedef struct Rulegraph
 {
-	Rule** all_rules_vertices;
+	Rule **all_rules_vertices;
 	int vertex_count;
 } Rulegraph;
 
-Symbol *generate_symbol_from(char* str, int is_inner, Symbol** inner_symbols);
+Symbol *generate_symbol_from(char *str, int is_inner, Symbol **inner_symbols);
 void free_symbol(Symbol *symbol);
 void free_symbol_list(Symbol **symbols);
 void free_rule_list(Rule **rules);
-char *serialize_symbols(Symbol** symbols);
+char *serialize_symbols(Symbol **symbols);
 
-Rule* search_for_rule(Rulegraph* rg, char* input_symbols, int is_lhs);
+Rule *search_for_rule(Rulegraph *rg, char *input_symbols, int is_lhs);
 void free_rulegraph(Rulegraph *rg);
 Rulegraph *generate_default_rulegraph();
-Rule *generate_rule_from(Symbol** symbol_list);
+Rule *generate_rule_from(Symbol **symbol_list);
 
-int update_rule_graph_with_facts(Rulegraph* rule_graph, char *facts);
+int update_rule_graph_with_facts(Rulegraph *rule_graph, char *facts);
 
-void print_rulegraph(Rulegraph* rule_graph);
-#endif  //!__RULES__H__
+void print_rulegraph(Rulegraph *rule_graph);
+#endif //!__RULES__H__
