@@ -97,6 +97,7 @@ int solve_bool_pair(int lhs, Symbol *operator, int rhs)
 		return lhs | rhs;
 	if (operator->operator== XOR)
 		return lhs ^ rhs;
+	return -1;
 }
 
 // populate an unresolved truth table given number of unique variables

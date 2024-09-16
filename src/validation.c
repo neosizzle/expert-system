@@ -34,9 +34,9 @@ int is_upper_and_nl(char *str)
 
 int assign_resolver(char *rule, char **resolver, char **resolver_pos)
 {
-	if (*resolver_pos = strstr(rule, IMPL_RESOLVER))
+	if ((*resolver_pos = strstr(rule, IMPL_RESOLVER)))
 		*resolver = IMPL_RESOLVER;
-	else if (*resolver_pos = strstr(rule, IFF_RESOLVER))
+	else if ((*resolver_pos = strstr(rule, IFF_RESOLVER)))
 		*resolver = IFF_RESOLVER;
 
 	// check no resolver
