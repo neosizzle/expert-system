@@ -65,3 +65,4 @@ The algorithm to resolve a symbol goes like this:
 6. Return the query symbol from cache
 
 ## Demo
+![demo.gif](https://raw.githubusercontent.com/neosizzle/expert-system/main/demo.gif)
