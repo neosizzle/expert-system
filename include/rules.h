@@ -1,8 +1,7 @@
 #ifndef __RULES__H__
 #define __RULES__H__
 
-#define FT_TRUE 1
-#define FT_FALSE 0
+#define  MAX_VERTEX_COUNT  32
 
 typedef enum SymbolType
 {

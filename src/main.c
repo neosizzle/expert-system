@@ -144,6 +144,13 @@ Symbol **parse_expression(char *line)
 
 			res[res_idx] = new_symbol;
 			res_idx += 1;
+			if (res_idx >= 16 - 1)
+			{
+				EPRINTF("[parse_expression] Max symbol of 16 reached \n");
+				free(linedup);
+				free_symbol_list(res);
+				return 0;
+			}
 		}
 
 		curr_token = strtok(NULL, " ");
@@ -199,6 +206,13 @@ int parse_rule(char *line, Rulegraph *rule_graph)
 	char *rule = strtok(line, "#");
 	char lhs[128] = {0};
 	char rhs[128] = {0};
+
+	// check if max vertex count reached
+	if (rule_graph->vertex_count >= MAX_VERTEX_COUNT - 1)
+	{
+		EPRINTF("[parse_rule] max vertex count of %d reached\n", MAX_VERTEX_COUNT)
+		return 1;
+	}
 
 	// check if rule has implication or iff
 	char *resolver = 0;
