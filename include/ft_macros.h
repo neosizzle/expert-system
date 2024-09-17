@@ -19,11 +19,28 @@
         printf(args);         \
     } while (0);
 
+#define WARN(indent, args...)  \
+    do                        \
+    {                         \
+        printf("%s", indent); \
+        printf("%s", YEL);         \
+        printf(args);         \
+        printf(RESET);         \
+    } while (0);
+
 #else
 
 #define DBG(indent, args...) \
     do                       \
     {                        \
+    } while (0);
+
+#define WARN(indent, args...)  \
+    do                        \
+    {                         \
+        printf(YEL);           \
+        printf(args);         \
+        printf(RESET);         \
     } while (0);
 
 #endif //__DEBUG__

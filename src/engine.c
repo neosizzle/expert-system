@@ -246,26 +246,35 @@ int *resolve_for_symbol(
 				rule_to_resolve->resolve_type,
 				lhs_rule_enforce);
 
-			apply_filters(
-				table,
-				permutation_results,
-				table_indices_to_keep,
-				total_rows);
-
-			DBG(indent, "[resolve_for_symbol] [%s] map\n", symbol_key);
+			DBG(indent, "[resolve_for_symbol] [%s] map unfiltered \n", symbol_key);
 			for (size_t i = 0; table[i]; i++)
 			{
 				for (size_t j = 0; j < num_elems; j++)
 					DBG(indent, "%d ", table[i][j]);
 				DBG(indent, " = [%d]\n", permutation_results[i]);
 			}
-			DBG(indent, "[resolve_for_symbol] [%s] map end\n", symbol_key);
+
+			apply_filters(
+				table,
+				permutation_results,
+				table_indices_to_keep,
+				total_rows);
+
+			DBG(indent, "[resolve_for_symbol] [%s] map filtered\n", symbol_key);
+			for (size_t i = 0; table[i]; i++)
+			{
+				for (size_t j = 0; j < num_elems; j++)
+					DBG(indent, "%d ", table[i][j]);
+				DBG(indent, " = [%d]\n", permutation_results[i]);
+			}
 
 			// store results of computation in cache
 			store_results_in_cache(
 				mapping,
 				table,
-				cache);
+				cache,
+				indent
+				);
 
 			for (size_t i = 0; table[i]; i++)
 				free(table[i]);
@@ -422,13 +431,7 @@ int *resolve_for_rule(
 		permutation_results,
 		num_elems);
 
-	apply_filters(
-		table,
-		permutation_results,
-		table_indices_to_keep,
-		total_rows);
-
-	DBG(indent, "[resolve_for_rule] map\n");
+	DBG(indent, "[resolve_for_rule] map unfiltered\n");
 	for (size_t i = 0; table[i]; i++)
 	{
 		// int num =
@@ -439,7 +442,25 @@ int *resolve_for_rule(
 		}
 		DBG(indent, " = [%d]\n", permutation_results[i])
 	}
-	DBG(indent, "[resolve_for_rule] map end\n");
+
+
+	apply_filters(
+		table,
+		permutation_results,
+		table_indices_to_keep,
+		total_rows);
+
+	DBG(indent, "[resolve_for_rule] map filtered\n");
+	for (size_t i = 0; table[i]; i++)
+	{
+		// int num =
+		for (size_t j = 0; j < num_elems; j++)
+		{
+			int num = table[i][j];
+			DBG(indent, "%d ", num)
+		}
+		DBG(indent, " = [%d]\n", permutation_results[i])
+	}
 
 	// return either true, false, or true / false
 	res_deduper(permutation_results);
@@ -625,11 +646,9 @@ void resolve_query(Rulegraph *rule_graph, char *facts_list, char *query_list)
 
 		// if ambigious, assume false
 		if (list_len_neg_1(res) > 1)
-		{
-			printf(YEL "[resolve_query] %s is %d" RESET "\n", query_str, 0);
-		}
+			printf(GRN "[resolve_query] %s is %d" RESET "\n", query_str, 0);
 		else
-			printf(YEL "[resolve_query] %s is %d" RESET "\n", query_str, res[0]);
+			printf(GRN "[resolve_query] %s is %d" RESET "\n", query_str, res[0]);
 
 		free(debug_indent);
 		free_symbol(query_symbol);

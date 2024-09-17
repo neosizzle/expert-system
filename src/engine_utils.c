@@ -2,6 +2,7 @@
 #include "ft_macros.h"
 #include "ft_map.h"
 #include "engine_utils.h"
+#include "colors.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -524,12 +525,11 @@ int *filter_tt_for_resolve_for_symbol(
 				{
 					char *list_serialized = serialize_symbols(symbol->inner_symbols);
 					char *to_map_serialized = serialize_symbols(to_map->inner_symbols);
-					if (!strcmp(list_serialized, to_map_serialized))
-					{
-						free(list_serialized);
-						free(to_map_serialized);
+					int cmp = strcmp(list_serialized, to_map_serialized);
+					free(list_serialized);
+					free(to_map_serialized);
+					if (!cmp)
 						break;
-					}
 				}
 				if (!strcmp(symbol->str_repr, to_map->str_repr))
 					break;
@@ -544,6 +544,7 @@ int *filter_tt_for_resolve_for_symbol(
 			int res_to_check = table_row[curr_col];
 			for (size_t i = 0; actual_symbol_results[i] != -1; i++)
 			{
+				// GENERATED == EXPECTED
 				if (actual_symbol_results[i] == res_to_check)
 					++found_flag;
 			}
@@ -790,7 +791,9 @@ void apply_filters(
 void store_results_in_cache(
 	Symbol **mapping,
 	int **table,
-	FtMap *cache)
+	FtMap *cache,
+	char *debug_indent
+	)
 {
 	int aux[MAX_VALUES]; // hard allocate
 	memset(aux, -1, sizeof(int) * MAX_VALUES);
@@ -810,20 +813,42 @@ void store_results_in_cache(
 			for (size_t i = 0; aux[i] != -1; i++)
 				aux[i] = !aux[i];
 		}
+		
+		// do dedup here to normalize results
+		res_deduper(aux);
+		int my_len = list_len_neg_1(aux);
+
+		// warn user for ambigious result
+		if (my_len > 1)
+			WARN(debug_indent, "[store_results_in_cache] WARN: Symbol %s resolved ambigious result\n", symbol_to_cache->str_repr)
 
 		// get cache value to compare length
 		int *cache_found = query_map(cache, symbol_to_cache);
 		if (cache_found)
 		{
-			// printf("cache_found[0] %d\n", cache_found[5]);
 			int cache_len = list_len_neg_1(cache_found);
-			int my_len = list_len_neg_1(aux);
+
+			// check for strong contradiction
+			// string contradiction means non-ambigious result is different
+			if (my_len == cache_len == 1 && cache_found[0] != aux[0])
+			{
+				DIE(1, "[store_results_in_cache] Strong contradiction found at %s\n", symbol_to_cache->str_repr);
+			}
+			
 			if (my_len < cache_len)
+			{
+				DBG(debug_indent, "[store_results_in_cache] Storing %s in map\n", symbol_to_cache->str_repr);
 				insert_map(cache, symbol_to_cache, aux, my_len);
+			}
+			else 
+				DBG(debug_indent, "[store_results_in_cache] Skipping %s in map\n", symbol_to_cache->str_repr);
 			free(cache_found);
 		}
 		else
+		{
+			DBG(debug_indent, "[store_results_in_cache] Storing %s in map\n", symbol_to_cache->str_repr);
 			insert_map(cache, symbol_to_cache, aux, MAX_VALUES); // NOTE: hardcoded length here
+		}
 		// reset aux
 		memset(aux, -1, MAX_VALUES * sizeof(int));
 	}

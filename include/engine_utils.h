@@ -54,7 +54,8 @@ void apply_filters(
 void store_results_in_cache(
 	Symbol **mapping,
 	int **table,
-	FtMap *cache);
+	FtMap *cache,
+	char *debug_indent);
 
 int list_len_neg_1(int *list);
 void print_list_endl(int *list);
