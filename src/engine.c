@@ -137,8 +137,6 @@ int *resolve_for_symbol(
 
 		// iterate through all possible results for that rule
 		int j = -1;
-		// just a marker here to tell the filter below wether or not
-		// the current LHS has results will yield more than 1 result
 		while (curr_rule_res[++j] != -1)
 		{
 			int curr_lhs_res = curr_rule_res[j];
@@ -348,7 +346,7 @@ int *resolve_for_rule(
 	int inner_symbols_indices_idx = -1;
 	char *rule_str = serialize_symbols(rule->symbol_list);
 
-	DBG(indent, "[resolve_for_rule] Entry for %s\n", rule_str);
+	DBG(indent, "[resolve_for_rule] [%s] Entry for %s\n", rule_str, rule_str);
 
 	// check if any inner symbols in rhs. If yes, handle them first
 	Symbol **inner_symbols = get_inner_symbols(rule->symbol_list, inner_symbols_indices);
@@ -375,28 +373,16 @@ int *resolve_for_rule(
 			continue;
 		}
 
-		// TODO circular check
-		DBG(indent, "[resolve_for_rule] resolving symbol %s\n", curr_symbol->str_repr);
+		DBG(indent, "[resolve_for_rule] [%s] resolving symbol %s\n", rule_str, curr_symbol->str_repr);
 		char *symbol_key = curr_symbol->str_repr;
 		char *tmp_indent = expand_indent_new(indent);
 		int *curr_symbol_res = resolve_for_symbol(rg, curr_symbol, facts, cache, original_key, rule_ignore_list, level, tmp_indent);
 		free(tmp_indent);
-		DBG(indent, "[resolve_for_rule] symbol %s resolved to: ", curr_symbol->str_repr);
+		DBG(indent, "[resolve_for_rule] [%s] symbol %s resolved to: ", rule_str, curr_symbol->str_repr);
 #ifdef __DEBUG__
 		print_list_endl(curr_symbol_res);
 #endif //_
 
-		// if current symbol is negated, apply negation on the results
-		// if (curr_symbol->is_negated)
-		// {
-		// 	for (size_t l = 0; curr_symbol_res[l] > -1; l++)
-		// 	{
-		// 		if (curr_symbol_res[l] == 1)
-		// 			curr_symbol_res[l] = 0;
-		// 		else
-		// 			curr_symbol_res[l] = 1;
-		// 	}
-		// }
 		rhs_symbols_res[i] = curr_symbol_res;
 	}
 
@@ -433,7 +419,7 @@ int *resolve_for_rule(
 		permutation_results,
 		num_elems);
 
-	DBG(indent, "[resolve_for_rule] tt unfiltered\n");
+	DBG(indent, "[resolve_for_rule] [%s] tt unfiltered\n", rule_str);
 	for (size_t i = 0; table[i]; i++)
 	{
 		// int num =
@@ -452,7 +438,7 @@ int *resolve_for_rule(
 		table_indices_to_keep,
 		total_rows);
 
-	DBG(indent, "[resolve_for_rule] tt filtered\n");
+	DBG(indent, "[resolve_for_rule] [%s] tt filtered\n", rule_str);
 	for (size_t i = 0; table[i]; i++)
 	{
 		// int num =
@@ -579,14 +565,35 @@ int *resolve_for_inner(
 		permutation_results,
 		num_elems);
 
+	DBG(indent, "[resolve_for_symbol] [%s] tt unfiltered \n", "-");
+	for (size_t i = 0; table[i]; i++)
+	{
+		for (size_t j = 0; j < num_elems; j++)
+			DBG(indent, "%d ", table[i][j]);
+		DBG(indent, " = [%d]\n", permutation_results[i]);
+	}
 	apply_filters(
 		table,
 		permutation_results,
 		table_indices_to_keep,
 		total_rows);
+	DBG(indent, "[resolve_for_symbol] [%s] tt filtered\n", "-");
+	for (size_t i = 0; table[i]; i++)
+	{
+		for (size_t j = 0; j < num_elems; j++)
+			DBG(indent, "%d ", table[i][j]);
+		DBG(indent, " = [%d]\n", permutation_results[i]);
+	}
 
 	// return either true, false, or true / false
 	res_deduper(permutation_results);
+
+	// since we dont store in cache, we do negation here for case !( symbols )
+	if (inner_symbol->is_negated)
+	{
+		for (size_t i = 0; permutation_results[i] != -1; i++)
+			permutation_results[i] = !permutation_results[i];	
+	}
 
 	DBG(indent, "[resolve_for_inner] [-] resolved to: ");
 #ifdef __DEBUG__

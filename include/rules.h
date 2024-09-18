@@ -63,4 +63,6 @@ Rule *generate_rule_from(Symbol **symbol_list);
 int update_rule_graph_with_facts(Rulegraph *rule_graph, char *facts);
 
 void print_rulegraph(Rulegraph *rule_graph);
+void print_adjacency_list(Rulegraph *rule_graph);
+
 #endif //!__RULES__H__

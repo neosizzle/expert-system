@@ -289,3 +289,40 @@ void print_rulegraph(Rulegraph *rule_graph)
 		free(rhs_symbols_str);
 	}
 }
+
+void print_adjacency_list(Rulegraph *rule_graph)
+{
+	printf("Adjency List:\n");
+	for (size_t i = 0; rule_graph->all_rules_vertices[i]; i++)
+	{
+		Rule *rule = rule_graph->all_rules_vertices[i];
+		Symbol **curr_list = rule->symbol_list;
+		while (curr_list)
+		{
+			Symbol **next_list = 0;
+			char *resolve = 0;
+
+			if (rule->resolve_type == IFF)
+			{
+				next_list = rule->iff->symbol_list;
+				rule = rule->iff;
+				resolve = " <=> ";
+			}
+			else if (rule->resolve_type == IMPLIES)
+			{
+				next_list = rule->implies->symbol_list;
+				rule = rule->implies;
+				resolve = " => ";
+			}
+			
+			char *lhs_symbols_str = serialize_symbols(curr_list);
+			if (next_list)
+				printf("%s%s", lhs_symbols_str, resolve);
+			else
+				printf("%s\n", lhs_symbols_str);
+			
+			free(lhs_symbols_str);
+			curr_list = next_list;
+		}
+	}
+}

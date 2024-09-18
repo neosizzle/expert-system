@@ -345,14 +345,24 @@ Symbol **generate_mapping_for_truth_table(Symbol **list)
 		if (list[i]->type != VARIABLE && list[i]->type != FACT && list[i]->type != INNER)
 			continue;
 
-		char *key = list[i]->str_repr;
+		char *key = 0;
+		if (list[i]->type == INNER)
+		{
+			char *tmp_key = serialize_symbols(list[i]->inner_symbols);
+			key = calloc(strlen(tmp_key) + 2, 1);
+			if (list[i]->is_negated)
+				key[0] = '!';
+			memcpy(key + list[i]->is_negated, tmp_key, strlen(tmp_key));
+		}
+		else
+			key = strdup(list[i]->str_repr);
 		int found_in_cache = 0;
 		int cache_idx = -1;
-
+		printf("key is %s\n", key);
 		while (cache[++cache_idx])
 		{
 			// if the current cache item matches current list item, mark as found
-			if (!strcmp(list[i]->str_repr, cache[cache_idx]))
+			if (!strcmp(key, cache[cache_idx]))
 			{
 				++found_in_cache;
 				break;
@@ -367,9 +377,10 @@ Symbol **generate_mapping_for_truth_table(Symbol **list)
 				// free_symbol(new_symbol);
 				DIE(1, "[unique_symbols] cache idx overflow")
 			}
-			cache[cache_idx] = strdup(list[i]->str_repr);
+			cache[cache_idx] = strdup(key);
 			res[++res_idx] = list[i];
 		}
+		free(key);
 	}
 
 	// free cache
@@ -396,14 +407,24 @@ int unique_symbols(Symbol **list)
 		if (list[i]->type != VARIABLE && list[i]->type != FACT && list[i]->type != INNER)
 			continue;
 
-		char *key = list[i]->str_repr;
+		char *key = 0;
+		if (list[i]->type == INNER)
+		{
+			char *tmp_key = serialize_symbols(list[i]->inner_symbols);
+			key = calloc(strlen(tmp_key) + 2, 1);
+			if (list[i]->is_negated)
+				key[0] = '!';
+			memcpy(key + list[i]->is_negated, tmp_key, strlen(tmp_key));
+		}
+		else
+			key = strdup(list[i]->str_repr);
 		int found_in_cache = 0;
 		int cache_idx = -1;
 
 		while (cache[++cache_idx])
 		{
 			// if the current cache item matches current list item, mark as found
-			if (!strcmp(list[i]->str_repr, cache[cache_idx]))
+			if (!strcmp(key, cache[cache_idx]))
 			{
 				++found_in_cache;
 				break;
@@ -418,8 +439,10 @@ int unique_symbols(Symbol **list)
 			{
 				DIE(1, "[unique_symbols] cache idx overflow")
 			}
-			cache[cache_idx] = strdup(list[i]->str_repr);
+			cache[cache_idx] = strdup(key);
 		}
+
+		free(key);
 	}
 
 	// free cache
@@ -472,8 +495,7 @@ int *filter_tt_for_resolve_for_symbol(
 	int *perm_results,
 	int lhs_res,
 	int num_elems,
-	ResolveType resolve_type
-	)
+	ResolveType resolve_type)
 {
 	int *res = (int *)malloc(MAX_VALUES * sizeof(int)); // shh.. hard allocate here
 	memset(res, -1, MAX_VALUES * sizeof(int));
@@ -492,7 +514,6 @@ int *filter_tt_for_resolve_for_symbol(
 	}
 	if (re_counter == 1)
 		rule_enforce = 1;
-	
 
 	while (perm_results[++curr_idx] != -1)
 	{
@@ -535,7 +556,7 @@ int *filter_tt_for_resolve_for_symbol(
 
 				if (symbol->type != VARIABLE && symbol->type != INNER && symbol->type != FACT)
 					++actual_symbol_idx_offset;
-				if (symbol->type == INNER && to_map->type == INNER)
+				else if (symbol->type == INNER && to_map->type == INNER)
 				{
 					char *list_serialized = serialize_symbols(symbol->inner_symbols);
 					char *to_map_serialized = serialize_symbols(to_map->inner_symbols);
@@ -545,7 +566,7 @@ int *filter_tt_for_resolve_for_symbol(
 					if (!cmp)
 						break;
 				}
-				if (!strcmp(symbol->str_repr, to_map->str_repr))
+				else if (!strcmp(symbol->str_repr, to_map->str_repr))
 					break;
 			}
 
@@ -624,7 +645,17 @@ int *filter_tt_for_resolve_for_inner(
 
 				if (symbol->type != VARIABLE && symbol->type != INNER && symbol->type != FACT)
 					++actual_symbol_idx_offset;
-				if (!strcmp(symbol->str_repr, to_map->str_repr))
+				else if (symbol->type == INNER && to_map->type == INNER)
+				{
+					char *list_serialized = serialize_symbols(symbol->inner_symbols);
+					char *to_map_serialized = serialize_symbols(to_map->inner_symbols);
+					int cmp = strcmp(list_serialized, to_map_serialized);
+					free(list_serialized);
+					free(to_map_serialized);
+					if (!cmp)
+						break;
+				}
+				else if (!strcmp(symbol->str_repr, to_map->str_repr))
 					break;
 			}
 
@@ -704,18 +735,17 @@ int *filter_tt_for_resolve_for_rule(
 
 				if (symbol->type != VARIABLE && symbol->type != INNER && symbol->type != FACT)
 					++actual_symbol_idx_offset;
-				if (symbol->type == INNER && to_map->type == INNER)
+				else if (symbol->type == INNER && to_map->type == INNER)
 				{
 					char *list_serialized = serialize_symbols(symbol->inner_symbols);
 					char *to_map_serialized = serialize_symbols(to_map->inner_symbols);
-					if (!strcmp(list_serialized, to_map_serialized))
-					{
-						free(list_serialized);
-						free(to_map_serialized);
+					int match = !strcmp(list_serialized, to_map_serialized);
+					free(list_serialized);
+					free(to_map_serialized);
+					if (match)
 						break;
-					}
 				}
-				if (!strcmp(symbol->str_repr, to_map->str_repr))
+				else if (!strcmp(symbol->str_repr, to_map->str_repr))
 					break;
 			}
 
@@ -806,8 +836,7 @@ void store_results_in_cache(
 	Symbol **mapping,
 	int **table,
 	FtMap *cache,
-	char *debug_indent
-	)
+	char *debug_indent)
 {
 	int aux[MAX_VALUES]; // hard allocate
 	memset(aux, -1, sizeof(int) * MAX_VALUES);
@@ -827,19 +856,10 @@ void store_results_in_cache(
 			for (size_t i = 0; aux[i] != -1; i++)
 				aux[i] = !aux[i];
 		}
-		
+
 		// do dedup here to normalize results
 		res_deduper(aux);
 		int my_len = list_len_neg_1(aux);
-
-		// // warn user for ambigious result
-		// // and change storage to hard false
-		// if (my_len > 1)
-		// {
-		// 	WARN(debug_indent, "[store_results_in_cache] WARN: Symbol %s resolved ambigious result, storing false\n", symbol_to_cache->str_repr)
-		// 	aux[0] = 0;
-		// 	aux[1] = -1;
-		// }
 
 		// get cache value to compare length
 		int *cache_found = query_map(cache, symbol_to_cache);
@@ -853,19 +873,25 @@ void store_results_in_cache(
 			{
 				DIE(1, "[store_results_in_cache] Strong contradiction found at %s\n", symbol_to_cache->str_repr);
 			}
-			
+
 			if (my_len < cache_len)
 			{
-				DBG(debug_indent, "[store_results_in_cache] Storing %s in map\n", symbol_to_cache->str_repr);
+				DBG(debug_indent, "[store_results_in_cache] Storing %s in map ", symbol_to_cache->str_repr);
+#ifdef __DEBUG__
+				print_list_endl(aux);
+#endif //_
 				insert_map(cache, symbol_to_cache, aux, my_len);
 			}
-			else 
+			else
 				DBG(debug_indent, "[store_results_in_cache] Skipping %s in map\n", symbol_to_cache->str_repr);
 			free(cache_found);
 		}
 		else
 		{
-			DBG(debug_indent, "[store_results_in_cache] Storing %s in map\n", symbol_to_cache->str_repr);
+			DBG(debug_indent, "[store_results_in_cache] Storing %s in map ", symbol_to_cache->str_repr);
+#ifdef __DEBUG__
+				print_list_endl(aux);
+#endif //_
 			insert_map(cache, symbol_to_cache, aux, MAX_VALUES); // NOTE: hardcoded length here
 		}
 		// reset aux

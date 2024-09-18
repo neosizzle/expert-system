@@ -61,6 +61,7 @@ Symbol **parse_expression(char *line)
 		// extract the subscring and recurse to get the symbols inside the parenthesis
 		char *inner = strndup(line + i + 1, matching_rp);
 		Symbol **new_expression = parse_expression(inner);
+
 		if (!new_expression)
 		{
 			free_symbol_list(res);
@@ -101,17 +102,18 @@ Symbol **parse_expression(char *line)
 					is_negated = 1;
 
 				Symbol *new_symbol = generate_symbol_from(curr_token + is_negated, 1, all_inner_symbols[inner_symbols_idx]);
-				new_symbol->is_negated = is_negated;
 				
 				// parsing error
 				if (!new_symbol)
 				{
 					EPRINTF("[parse_expression], invalid parenthesis, got %s\n", line);
+					free_symbol_list(all_inner_symbols[inner_symbols_idx]);
 					free(linedup);
 					free_symbol_list(res);
 					return 0;
 				}
 
+				new_symbol->is_negated = is_negated;
 				res[res_idx] = new_symbol;
 				res_idx += 1;
 				inner_symbols_idx += 1;
@@ -383,7 +385,7 @@ int main(int argc, char *argv[])
 	// update the symbols here w/ facts here because we are cool and lazy
 	update_rule_graph_with_facts(rule_graph, facts_list);
 	print_banner();
-	print_rulegraph(rule_graph);
+	print_adjacency_list(rule_graph);
 	print_help();
 
 #ifdef __DEBUG__
