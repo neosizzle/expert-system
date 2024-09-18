@@ -312,7 +312,7 @@ int *resolve_for_symbol(
 
 		if (list_len_neg_1(cache_found) > 1)
 		{
-			WARN(debug_indent,  "[resolve_for_symbol] [%s] WARN: resolved ambigious result, assuming false\n", symbol_key)
+			WARN(indent,  "[resolve_for_symbol] [%s] WARN: resolved ambigious result, assuming false\n", symbol_key)
 			memset(cache_found, -1, MAX_VALUES * sizeof(int));
 			cache_found[0] = 0;
 		}

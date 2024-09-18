@@ -77,6 +77,8 @@ Symbol *generate_symbol_from(char *str, int is_inner, Symbol **inner_symbols)
 
 void serialize_symbols_inner(Symbol *inner_symbol, char *res)
 {
+	if (inner_symbol->is_negated)
+		strcat(res, "!");
 	strcat(res, "( ");
 	for (size_t i = 0; inner_symbol->inner_symbols[i]; i++)
 	{

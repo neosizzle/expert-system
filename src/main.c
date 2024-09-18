@@ -94,8 +94,15 @@ Symbol **parse_expression(char *line)
 			// first '(' found, find symbol list to replace
 			if (pstack == 0)
 			{
-				Symbol *new_symbol = generate_symbol_from(curr_token, 1, all_inner_symbols[inner_symbols_idx]);
+				int is_negated = 0;
 
+				// check if negation is at curr token
+				if (curr_token[0] == '!')
+					is_negated = 1;
+
+				Symbol *new_symbol = generate_symbol_from(curr_token + is_negated, 1, all_inner_symbols[inner_symbols_idx]);
+				new_symbol->is_negated = is_negated;
+				
 				// parsing error
 				if (!new_symbol)
 				{
