@@ -19,6 +19,14 @@ Symbol *generate_symbol_from(char *str, int is_inner, Symbol **inner_symbols)
 	if (str[0] == '!')
 		res->is_negated = 1;
 
+	// edge case, we get just a !
+	if (str[0] == '!' && strlen(str) == 1)
+	{
+		EPRINTF("[generate_symbol_from] '!' is not a valid symbol\n");
+		free_symbol(res);
+		return 0;
+	}
+
 	// strlen > 2, reject.
 	if (strlen(str) > 2)
 	{
