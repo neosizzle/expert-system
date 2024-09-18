@@ -472,13 +472,27 @@ int *filter_tt_for_resolve_for_symbol(
 	int *perm_results,
 	int lhs_res,
 	int num_elems,
-	ResolveType resolve_type,
-	int rule_enforce)
+	ResolveType resolve_type
+	)
 {
 	int *res = (int *)malloc(MAX_VALUES * sizeof(int)); // shh.. hard allocate here
 	memset(res, -1, MAX_VALUES * sizeof(int));
 	int curr_idx = -1;
 	int res_idx = -1;
+	int rule_enforce = 0;
+
+	// if we only have 1 result which match out lhs_res in perm_results
+	// that rule will be 'enforced', bypassing default false assumptions
+	// on symbols. For cases like A + B vs A | B in rhs
+	int re_counter = 0;
+	for (size_t i = 0; perm_results[i] != -1; i++)
+	{
+		if (perm_results[i] == lhs_res)
+			++re_counter;
+	}
+	if (re_counter == 1)
+		rule_enforce = 1;
+	
 
 	while (perm_results[++curr_idx] != -1)
 	{
@@ -818,9 +832,14 @@ void store_results_in_cache(
 		res_deduper(aux);
 		int my_len = list_len_neg_1(aux);
 
-		// warn user for ambigious result
-		if (my_len > 1)
-			WARN(debug_indent, "[store_results_in_cache] WARN: Symbol %s resolved ambigious result\n", symbol_to_cache->str_repr)
+		// // warn user for ambigious result
+		// // and change storage to hard false
+		// if (my_len > 1)
+		// {
+		// 	WARN(debug_indent, "[store_results_in_cache] WARN: Symbol %s resolved ambigious result, storing false\n", symbol_to_cache->str_repr)
+		// 	aux[0] = 0;
+		// 	aux[1] = -1;
+		// }
 
 		// get cache value to compare length
 		int *cache_found = query_map(cache, symbol_to_cache);

@@ -24,8 +24,8 @@ int *filter_tt_for_resolve_for_symbol(
 	int *perm_results,
 	int lhs_res,
 	int num_elems,
-	ResolveType resolve_type,
-	int rule_enforce);
+	ResolveType resolve_type
+	);
 
 int *filter_tt_for_resolve_for_rule(
 	int **table,

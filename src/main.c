@@ -391,6 +391,8 @@ int main(int argc, char *argv[])
 		// prompt for fact change
 		write(1, "# ", 2);
 		char *prompt = get_next_line(0);
+		if (!prompt)
+			break;
 		prompt[strlen(prompt) - 1] = 0;
 
 		// exit prompt

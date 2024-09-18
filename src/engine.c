@@ -139,11 +139,6 @@ int *resolve_for_symbol(
 		int j = -1;
 		// just a marker here to tell the filter below wether or not
 		// the current LHS has results will yield more than 1 result
-		int lhs_rule_enforce = 1;
-		if (list_len_neg_1(curr_rule_res) != 1)
-			lhs_rule_enforce = 0;
-		if (list_len_neg_1(curr_rule_res) == 1 && curr_rule_res[0] == 0 && rule_to_resolve->resolve_type == IMPLIES)
-			lhs_rule_enforce = 0;
 		while (curr_rule_res[++j] != -1)
 		{
 			int curr_lhs_res = curr_rule_res[j];
@@ -243,10 +238,10 @@ int *resolve_for_symbol(
 				permutation_results,
 				curr_lhs_res,
 				num_elems,
-				rule_to_resolve->resolve_type,
-				lhs_rule_enforce);
+				rule_to_resolve->resolve_type
+				);
 
-			DBG(indent, "[resolve_for_symbol] [%s] map unfiltered \n", symbol_key);
+			DBG(indent, "[resolve_for_symbol] [%s] tt unfiltered \n", symbol_key);
 			for (size_t i = 0; table[i]; i++)
 			{
 				for (size_t j = 0; j < num_elems; j++)
@@ -260,7 +255,7 @@ int *resolve_for_symbol(
 				table_indices_to_keep,
 				total_rows);
 
-			DBG(indent, "[resolve_for_symbol] [%s] map filtered\n", symbol_key);
+			DBG(indent, "[resolve_for_symbol] [%s] tt filtered\n", symbol_key);
 			for (size_t i = 0; table[i]; i++)
 			{
 				for (size_t j = 0; j < num_elems; j++)
@@ -314,6 +309,13 @@ int *resolve_for_symbol(
 #ifdef __DEBUG__
 		print_list_endl(cache_found);
 #endif //_
+
+		if (list_len_neg_1(cache_found) > 1)
+		{
+			WARN(debug_indent,  "[resolve_for_symbol] [%s] WARN: resolved ambigious result, assuming false\n", symbol_key)
+			memset(cache_found, -1, MAX_VALUES * sizeof(int));
+			cache_found[0] = 0;
+		}
 
 		memcpy(res, cache_found, MAX_VALUES * sizeof(int));
 		free(rules_to_resolve);
@@ -431,7 +433,7 @@ int *resolve_for_rule(
 		permutation_results,
 		num_elems);
 
-	DBG(indent, "[resolve_for_rule] map unfiltered\n");
+	DBG(indent, "[resolve_for_rule] tt unfiltered\n");
 	for (size_t i = 0; table[i]; i++)
 	{
 		// int num =
@@ -450,7 +452,7 @@ int *resolve_for_rule(
 		table_indices_to_keep,
 		total_rows);
 
-	DBG(indent, "[resolve_for_rule] map filtered\n");
+	DBG(indent, "[resolve_for_rule] tt filtered\n");
 	for (size_t i = 0; table[i]; i++)
 	{
 		// int num =
