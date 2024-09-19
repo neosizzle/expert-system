@@ -358,7 +358,6 @@ Symbol **generate_mapping_for_truth_table(Symbol **list)
 			key = strdup(list[i]->str_repr);
 		int found_in_cache = 0;
 		int cache_idx = -1;
-		printf("key is %s\n", key);
 		while (cache[++cache_idx])
 		{
 			// if the current cache item matches current list item, mark as found

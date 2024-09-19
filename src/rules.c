@@ -343,9 +343,15 @@ int is_circular(Rulegraph *rg)
 			Symbol **next_list = 0;
 
 			if (rule->resolve_type == IFF)
+			{
 				next_list = rule->iff->symbol_list;
+				rule = rule->iff;
+			}
 			else if (rule->resolve_type == IMPLIES)
+			{
 				next_list = rule->implies->symbol_list;
+				rule = rule->implies;
+			}
 			curr_list = next_list;
 		}
 	}
