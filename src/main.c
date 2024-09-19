@@ -350,6 +350,13 @@ int parse_input_file(int fd, Rulegraph *rule_graph, char *query_list, char *fact
 				return 1;
 		}
 	}
+
+	// check circular dependency
+	if (is_circular(rule_graph))
+	{
+		EPRINTF("[parse_input_file] Circular dependency detected\n")
+		return 1;
+	}
 	return 0;
 }
 

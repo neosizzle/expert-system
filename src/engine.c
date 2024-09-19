@@ -277,7 +277,6 @@ int *resolve_for_symbol(
 			free(permutation_results);
 			free(table_indices_to_keep);
 
-			// TODO free all stuff here
 			for (size_t i = 0; rhs_symbols_res[i]; i++)
 			{
 				if (rhs_symbols_res[i] == (int *)-1)
@@ -453,7 +452,6 @@ int *resolve_for_rule(
 	// return either true, false, or true / false
 	res_deduper(permutation_results);
 
-	// TODO free all stuff here
 	for (size_t i = 0; rhs_symbols_res[i]; i++)
 	{
 		if (rhs_symbols_res[i] == (int *)-1)

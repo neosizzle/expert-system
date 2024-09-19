@@ -326,3 +326,28 @@ void print_adjacency_list(Rulegraph *rule_graph)
 		}
 	}
 }
+
+int is_circular(Rulegraph *rg)
+{
+	for (size_t i = 0; rg->all_rules_vertices[i]; i++)
+	{
+		int counter = 0;
+		Rule *rule = rg->all_rules_vertices[i];
+		Symbol **curr_list = rule->symbol_list;
+		while (curr_list)
+		{
+			++counter;
+
+			if (counter >= 100)
+				return 1;
+			Symbol **next_list = 0;
+
+			if (rule->resolve_type == IFF)
+				next_list = rule->iff->symbol_list;
+			else if (rule->resolve_type == IMPLIES)
+				next_list = rule->implies->symbol_list;
+			curr_list = next_list;
+		}
+	}
+	return 0;
+}
