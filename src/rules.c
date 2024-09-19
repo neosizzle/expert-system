@@ -292,7 +292,7 @@ void print_rulegraph(Rulegraph *rule_graph)
 
 void print_adjacency_list(Rulegraph *rule_graph)
 {
-	printf("Adjency List:\n");
+	printf("Adjacency List:\n");
 	for (size_t i = 0; rule_graph->all_rules_vertices[i]; i++)
 	{
 		Rule *rule = rule_graph->all_rules_vertices[i];

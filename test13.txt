@@ -1,3 +1,8 @@
-A => B | C
+A <=> B ^ C
 =A
 ?B
+
+# If no facts, B should be false
+# If facts is A, B should be true
+# If facts is AC, B should be false
+# If facts is C, B should be true
